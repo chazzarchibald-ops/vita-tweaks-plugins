@@ -94,3 +94,7 @@ The plugin is `build/tweaks.suprx`.
 - The way plugins add Settings pages comes from [HENkaku](https://github.com/henkaku/henkaku)'s settings page.
 - [taiHEN](https://github.com/yifanlu/taiHEN) by Yifan Lu, whose hook chaining makes the load order trick possible.
 - PS Vita plugin by badmanwazzy37.
+
+## License
+
+[MIT](LICENSE)
