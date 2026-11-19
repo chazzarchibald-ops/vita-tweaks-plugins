@@ -18,11 +18,16 @@ add_executable(tweaks main.c regroup.c store.c)
 # Only ever loaded into the Settings app, so plain (strong) stubs are fine.
 target_link_libraries(tweaks
   taihen_stub
+  SceAppMgr_stub
   SceIofilemgr_stub
   SceKernelModulemgr_stub
   SceKernelThreadMgr_stub
   SceLibKernel_stub
+  ScePower_stub
+  SceRegistryMgr_stub
+  SceRtc_stub
   SceSysmem_stub
+  SceVshBridge_stub
   gcc
 )
 

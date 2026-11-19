@@ -15,13 +15,18 @@ static const char *const g_stock_root_ids[] = {
 	"notification_settings", "sound_settings", "theme_settings", "location_settings",
 	"security_settings", "datetime_settings", "language_settings", "accessibility",
 	"console_info", "reset", "powersave_settings", "idu_settings", "debug_settings",
+	"system_update", // in Sony's own 3.65 menu; HENkaku's copy leaves it out
 };
 
 static const char g_list_open[] =
 	"\n<setting_list id=\"tweaks_plugins\" title=\"tw_title\" icon=\"tex_spanner\">\n";
 static const char g_list_empty[] =
 	"<label id=\"tw_empty\" title=\"tw_empty_title\" description=\"tw_empty_text\"/>\n";
-static const char g_list_close[] = "</setting_list>\n";
+// The list ends with the version and credit, set apart as Engram's credits are.
+static const char g_list_close[] =
+	"<spacer id=\"tw_spacer\" height=\"24\"/>\n"
+	"<label id=\"tw_about\" title=\"tw_about_title\" description=\"tw_about_text\"/>\n"
+	"</setting_list>\n";
 
 static int str_len(const char *s) {
 	int n = 0;
@@ -144,31 +149,65 @@ static int is_stock_root(const char *id) {
 }
 
 int tw_match_root(const char *id, const char *title, void *ctx) {
-	return !str_prefix(id, "id_") && !is_stock_root(id);
+	return !is_stock_root(id);
 }
 
 int tw_match_page(const char *id, const char *title, void *ctx) {
-	return !str_prefix(id, "id_") && !str_prefix(title, "msg_");
+	return title[0] && !str_prefix(title, "msg_");
 }
 
 int tw_match_ids(const char *id, const char *title, void *ctx) {
 	return tw_idset_has((const tw_idset_t *)ctx, id);
 }
 
-// The rules every match goes through first: HENkaku's and our own entries never
-// move, keep= never moves, move= always does.
+static int is_alnum(char c) {
+	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
+// Whether a and the first b_len bytes of b are the same once case and anything
+// that isn't a letter or digit are ignored: "Wi-Fi Turbo" is "wifiturbo".
+static int loose_eq(const char *a, const char *b, int b_len) {
+	const char *b_end = b + b_len;
+	int seen = 0;
+	for (;;) {
+		while (*a && !is_alnum(*a)) a++;
+		while (b < b_end && !is_alnum(*b)) b++;
+		if (!*a || b >= b_end) return seen && !*a && b >= b_end;
+		if ((*a | 0x20) != (*b | 0x20)) return 0;
+		a++; b++; seen = 1;
+	}
+}
+
+int tw_name_matches(const char *want, const char *id, const char *title) {
+	int len = str_len(id);
+	if (loose_eq(want, id, len) || loose_eq(want, title, str_len(title))) return 1;
+	// What a person would call it: the id without "id_" in front or "_settings" behind.
+	if (str_prefix(id, "id_")) { id += 3; len -= 3; }
+	if (len > 9 && str_eq(id + len - 9, "_settings")) len -= 9;
+	return loose_eq(want, id, len);
+}
+
+int tw_rule_has(const tw_idset_t *set, const char *id, const char *title) {
+	for (int i = 0; i < set->count; i++) if (tw_name_matches(set->id[i], id, title)) return 1;
+	return 0;
+}
+
+// The rules every match goes through first: HENkaku's and our own entries are
+// never a plugin's, and move= always is. (keep= is the caller's business: the
+// entry is still found, and marked kept.)
 static int is_foreign(const char *id, const char *title, const tw_rules_t *rules, tw_match_t match, void *ctx) {
 	if (!id[0]) return 0;
 	if (str_contains(id, "henkaku") || str_prefix(id, "tweaks_") || str_prefix(id, "tw_")) return 0;
-	if (tw_idset_has(&rules->keep, id)) return 0;
-	if (tw_idset_has(&rules->move, id)) return 1;
+	if (tw_rule_has(&rules->move, id, title)) return 1;
 	return match(id, title, ctx);
 }
 
 int tw_page_plugin(const char *xml, int size, char *out, int out_size) {
 	const char *end = xml + (size < 512 ? size : 512);
-	const char *p = find(xml, end, "plugin=\"");
 	out[0] = '\0';
+	// Anything that isn't XML text (after an optional byte order mark) isn't a page.
+	if (size < 16 || (xml[0] != '<' && !at(xml, end, "\xEF\xBB\xBF<"))) return 0;
+	const char *p = find(xml, end, "plugin=\"");
 	if (!p) return 0;
 	p += 8;
 	int i = 0;
@@ -210,9 +249,11 @@ int tw_find_blocks(const char *xml, int size, const tw_rules_t *rules, tw_match_
 			tw_block_t *b = &blocks[count++];
 			b->start = (int)(p - xml);
 			b->end = (int)(e - xml);
-			b->movable = tw_idset_has(&rules->move, id) ||
-		             (!find(p, e, "<button") && !find(p, e, "<user_custom"));
-			for (int i = 0; i < TW_ID_LEN; i++) b->id[i] = id[i];
+			b->buttons = find(p, e, "<button") != 0;
+			b->custom = find(p, e, "<user_custom") != 0;
+			b->kept = tw_rule_has(&rules->keep, id, title);
+			b->movable = !b->kept && (!b->custom || tw_rule_has(&rules->move, id, title));
+			for (int i = 0; i < TW_ID_LEN; i++) { b->id[i] = id[i]; b->title[i] = title[i]; }
 			p = e - 1;
 			continue;
 		}
@@ -272,14 +313,26 @@ static int root_insert_point(const char *xml, int size) {
 	return -1;
 }
 
+void tw_tag_attr(const char *tag, int len, const char *name, char *out, int out_size) {
+	const char *gt = tag_close(tag, tag + len);
+	out[0] = 0;
+	if (gt) get_attr(tag, gt, name, out, out_size);
+}
+
+int tw_has(const char *text, int len, const char *needle) {
+	return find(text, text + len, needle) != 0;
+}
+
 int tw_build_root(const char *xml, int size, const tw_block_t *blocks, int nblocks,
-                  const char *extra, int extra_len, char *out, int out_size) {
+                  const char *head, int head_len, const char *extra, int extra_len,
+                  char *out, int out_size) {
 	int ins = root_insert_point(xml, size);
 	if (ins < 0) return -1;
 	int pos = 0;
 
 	if (put_without(xml, 0, ins, blocks, nblocks, out, out_size, &pos) < 0) return -1;
 	if (put(out, out_size, &pos, g_list_open, sizeof(g_list_open) - 1) < 0) return -1;
+	if (put(out, out_size, &pos, head, head_len) < 0) return -1;
 	if (put(out, out_size, &pos, extra, extra_len) < 0) return -1;
 	if (extra_len == 0 &&
 			put(out, out_size, &pos, g_list_empty, sizeof(g_list_empty) - 1) < 0)

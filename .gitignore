@@ -1,1 +1,4 @@
 build/
+# made for looking at, not for building: the mockups page and the pictures put into it
+installer/preview/mockups.html
+installer/preview/photos.js

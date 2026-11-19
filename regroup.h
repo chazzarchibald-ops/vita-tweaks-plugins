@@ -11,8 +11,12 @@
 
 typedef struct {
 	int start, end;          // [start, end) of the whole element in the page buffer
-	int movable;             // 0 when it holds a <button> or <user_custom> (page-bound handlers)
+	int kept;                // config says keep= it where its plugin put it
+	int custom;              // holds a <user_custom>, a widget drawn by the page it's on
+	int movable;             // goes to Tweaks/Plugins: not kept, and not custom unless move= says so
+	int buttons;             // holds a <button>: these have worked after a move (Wi-Fi Turbo's), but may not
 	char id[TW_ID_LEN];
+	char title[TW_ID_LEN];   // its title attribute: a text id, or the text itself
 } tw_block_t;
 
 typedef struct {
@@ -31,29 +35,43 @@ int tw_page_plugin(const char *xml, int size, char *out, int out_size);
 // Decides whether a <setting_list>/<link> with this id and title is a plugin's.
 typedef int (*tw_match_t)(const char *id, const char *title, void *ctx);
 
-// Guesses from names, for when there's no stock page to compare with:
-// top menu, an id that isn't one of Sony's rows; other pages, an id without "id_"
-// and a title without "msg_". (YAMT's "id_yamt" fails this; the probe catches it.)
+// Guesses from names, for when there is no stock page to compare with: top menu,
+// an id that is not one of Sony's rows; other pages, a title that is not one of
+// Sony's "msg_" text ids (plugins bring their own text, or write it out as YAMT does).
 int tw_match_root(const char *id, const char *title, void *ctx);
 int tw_match_page(const char *id, const char *title, void *ctx);
 // ctx is a tw_idset_t: exactly those ids.
 int tw_match_ids(const char *id, const char *title, void *ctx);
 
+// Whether a config line's value names this entry. People write what they see, so
+// case and punctuation are ignored, and it may be the id ("id_yamt"), the id
+// without "id_" or "_settings" ("yamt", "Wi-Fi Turbo" for wifiturbo_settings), or
+// the entry's own title ("Storage Devices").
+int tw_name_matches(const char *want, const char *id, const char *title);
+int tw_rule_has(const tw_idset_t *set, const char *id, const char *title);
+
 // Finds the entries below the page's own list that `match` picks, after the rules
-// every page shares: HENkaku's and our own never, keep= never, move= always. A
-// match is taken whole, nested lists and all. Returns the block count.
+// every page shares: HENkaku's and our own never, move= always. keep= entries are
+// found too, marked kept and not movable. A match is taken whole, nested lists and
+// all. Returns the block count.
 int tw_find_blocks(const char *xml, int size, const tw_rules_t *rules, tw_match_t match, void *ctx,
                    tw_block_t *blocks, int max_blocks);
 
 // Copies one block with its own title="..." set to `title`. Returns the size, or -1.
 int tw_retitle(const char *block, int len, const char *title, char *out, int out_size);
 
-// Writes the root menu with `blocks` removed and a "Tweaks/Plugins" submenu inserted
-// right after HENkaku's row, holding `extra` (every entry for the list, the removed
-// blocks among them, as the caller wants them shown). Returns the output size, or
-// -1 if out is too small.
+// The attribute `name` of the tag that starts at `tag`, or "" if it has none.
+void tw_tag_attr(const char *tag, int len, const char *name, char *out, int out_size);
+int tw_has(const char *text, int len, const char *needle);
+
+// Writes the root menu with the movable `blocks` removed and a "Tweaks/Plugins"
+// submenu inserted right after HENkaku's row. The submenu holds `head` (our own
+// rows), then `extra` (every plugin entry for the list, the removed blocks among
+// them, as the caller wants them shown), or a note that there are none. Returns
+// the output size, or -1 if out is too small.
 int tw_build_root(const char *xml, int size, const tw_block_t *blocks, int nblocks,
-                  const char *extra, int extra_len, char *out, int out_size);
+                  const char *head, int head_len, const char *extra, int extra_len,
+                  char *out, int out_size);
 
 // Writes the page with `blocks` removed. Returns the output size, or -1.
 int tw_strip_blocks(const char *xml, int size, const tw_block_t *blocks, int nblocks,
