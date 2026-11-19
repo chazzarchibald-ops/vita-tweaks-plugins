@@ -1,0 +1,1279 @@
+<title>Tweaks/Plugins Installer Mockups</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins&family=Righteous&display=swap">
+<style>
+/* Layout: one Vita-sized screen, centred, with its buttons underneath. A single dark look, like the console. */
+:root {
+	color-scheme: dark;
+	--bg: #0b0d13;
+	--surface: #151925;
+	--edge: #2a3146;
+	--fg: #e9eaf0;
+	--muted: #9aa1b4;
+	--accent: #7cc0ff;
+	--font: "Segoe UI", "Helvetica Neue", system-ui, -apple-system, Roboto, Arial, sans-serif;
+	--mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+}
+html, body { height: 100%; }
+body {
+	background: var(--bg);
+	color: var(--fg);
+	font-family: var(--font);
+	font-size: 15px;
+	line-height: 1.5;
+	padding-block: 24px;
+	padding-left: max(16px, env(safe-area-inset-left, 0px));
+	padding-right: max(16px, env(safe-area-inset-right, 0px));
+	box-sizing: border-box;
+}
+.wrap {
+	max-width: 992px;
+	margin: 0 auto;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
+header p { margin: 0; color: var(--muted); }
+.bezel {
+	background: #05060a;
+	border: 1px solid var(--edge);
+	border-radius: 22px;
+	padding: clamp(8px, 2vw, 16px);
+}
+canvas {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	height: auto;
+	aspect-ratio: 960 / 544;
+	border-radius: 8px;
+	background: #0e1018;
+	cursor: pointer;
+}
+canvas:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.pad { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button {
+	font: inherit;
+	color: var(--fg);
+	background: var(--surface);
+	border: 1px solid var(--edge);
+	border-radius: 10px;
+	padding: 8px 14px;
+	cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button kbd { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-left: 6px; }
+.spacer { flex: 1 1 auto; }
+#rate { color: var(--muted); font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+.notes { color: var(--muted); max-width: 70ch; margin: 0; }
+.notes strong { color: var(--fg); font-weight: 600; }
+/* The bubble's designs: a row of cards to choose from, then the home screen with the chosen one on it. */
+h2 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-top: 8px; }
+.section-head p { margin: 0; color: var(--muted); }
+.designs { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.design {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	grid-template-rows: auto auto;
+	gap: 10px 14px;
+	align-items: center;
+	text-align: left;
+	padding: 14px;
+	border-radius: 14px;
+}
+.design[aria-pressed="true"] { border-color: var(--accent); background: #1b2233; }
+.design .big { grid-row: 1 / 3; width: 104px; height: 104px; }
+.design .smalls { display: flex; align-items: center; gap: 10px; }
+.design .name { font-weight: 600; }
+.design .idea { display: block; color: var(--muted); font-size: 13px; line-height: 1.35; }
+.bubble { border-radius: 50%; display: block; flex: none; }
+.home {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 14px 22px;
+	padding: 18px 22px;
+	border-radius: 14px;
+	border: 1px solid var(--edge);
+	background: linear-gradient(160deg, #17408f 0%, #2f7fcd 52%, #8fd0ef 100%);
+}
+.home .bubble { width: 84px; height: 84px; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.22); }
+.home p { margin: 0; color: #f2f7ff; flex: 1 1 200px; min-width: 0; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
+.home strong { font-weight: 600; }
+</style>
+
+<div class="wrap">
+	<header>
+		<h1>Tweaks/Plugins Installer</h1>
+		<p>Design mockups: the bubble icon and the app's screen</p>
+	</header>
+
+	<div class="section-head">
+		<h2 id="icons-title">Bubble icon</h2>
+		<p>Four designs, each 128 x 128 and cut to a circle by the Vita. Choose one.</p>
+	</div>
+	<div class="designs" id="designs" role="group" aria-labelledby="icons-title"></div>
+	<div class="home">
+		<canvas id="home-own" class="bubble" width="256" height="256" aria-label="The chosen bubble"></canvas>
+		<img id="home-engram" class="bubble" alt="Engram Installer's bubble" width="84" height="84">
+		<img id="home-cyberflow" class="bubble" alt="CyberFlow Launcher's bubble" width="84" height="84">
+		<p><strong id="home-name">Rows</strong> on the home screen, beside the Engram Installer and CyberFlow Launcher bubbles.</p>
+	</div>
+
+	<div class="section-head">
+		<h2>App screen</h2>
+		<p>The installer as the Vita shows it, 960 x 544. It opens on My other projects.</p>
+	</div>
+
+	<div class="bezel">
+		<canvas id="screen" width="960" height="544" tabindex="0" aria-label="The installer's screen: a menu on the left, what Tweaks/Plugins does or the author's other projects on the right, and a ball of liquid moving behind them"></canvas>
+	</div>
+
+	<div class="pad">
+		<button id="btn-up" type="button">Up <kbd>&uarr;</kbd></button>
+		<button id="btn-down" type="button">Down <kbd>&darr;</kbd></button>
+		<button id="btn-select" type="button">Enter <kbd>Enter</kbd></button>
+		<button id="btn-back" type="button">Back <kbd>Backspace</kbd></button>
+		<button id="btn-left" type="button">Left <kbd>&larr;</kbd></button>
+		<button id="btn-right" type="button">Right <kbd>&rarr;</kbd></button>
+		<button id="btn-l" type="button">L <kbd>Q</kbd></button>
+		<button id="btn-r" type="button">R <kbd>E</kbd></button>
+		<button id="btn-start" type="button">START <kbd>Esc</kbd></button>
+		<span class="spacer"></span>
+		<span id="rate"></span>
+		<button id="btn-layout" type="button" aria-pressed="false">X enters, O goes back</button>
+		<button id="btn-pause" type="button">Pause</button>
+	</div>
+
+	<p class="notes"><strong>Enter and back follow the Vita's own setting:</strong> X enters and O goes back, or the other way round on a Japanese Vita or with HENkaku's O Button Behavior changed. The button beside Pause switches the preview between the two.</p>
+	<p class="notes">The liquid is drawn by the same code as on the Vita, carried over line for line, so the motion, colours and shading are what the console shows. <strong>The text is in the app's own two fonts,</strong> Poppins and Righteous for the name, though the Vita draws the letters with its own font library, so their spacing can differ a little. Nothing is installed from this page, and it doesn't go online: choosing Install or update, Uninstall or Check for a new version only shows what the app would report, and so does installing one of the other projects. On the Vita, each project's photos, releases, notes and download sizes come from GitHub as the window opens (and are kept on the memory card); here they are stand-ins from when this page was made: Engram's notes are written for the mockup, not copied from its releases.</p>
+</div>
+
+<script>
+/*LIQUID_JS*/
+</script>
+<script>
+/*PROJECT_PHOTOS*/
+</script>
+<script>
+'use strict';
+(function () {
+	const N = SCREEN_W * SCREEN_H;
+	const RGB = (r, g, b) => ((b << 16) | (g << 8) | r) >>> 0;
+	const COLOR_TEXT = [0xEC, 0xEC, 0xF0], COLOR_DIM = [0xA8, 0xAE, 0xBE], COLOR_ACCENT = [0x7C, 0xC0, 0xFF];
+	const COLOR_GOOD = [0x76, 0xE0, 0x96], COLOR_BAD = [0xFF, 0x84, 0x84];
+	const PANEL = RGB(10, 12, 20), ACCENT = RGB(0x7C, 0xC0, 0xFF), PANEL_ALPHA = 92;
+	const LEFT_X = 32, RIGHT_X = 456, PANEL_Y = 132, PANEL_H = 316;
+	// The app's two fonts, which its VPK carries: Poppins, and Righteous for the name.
+	const FONT = 'Poppins, "Segoe UI", "Helvetica Neue", system-ui, -apple-system, Roboto, Arial, sans-serif';
+	const TITLE_FONT = 'Righteous, ' + FONT;
+	let font = FONT;
+	const MENU_INSTALL = 0, MENU_UPDATE = 1, MENU_UNINSTALL = 2, MENU_PROJECTS = 3, MENU_FONTS = -1; // (no fonts row here)
+	const MENU = ['Install or update', 'Check for a new version', 'Uninstall', 'My other projects', 'Exit'];
+	const ROW_Y = PANEL_Y + 50, ROW_H = 33, ROW_TEXT = 19;
+	let addFonts = false;
+	// Which of O and X enters: the system's setting on the Vita, a button under the screen here.
+	let circleEnters = false;
+	const enterName = () => circleEnters ? 'O' : 'X', backName = () => circleEnters ? 'X' : 'O';
+	const MENU_HELP = [
+		"Copies Tweaks/Plugins to ur0:tai and puts it first under *NPXS10015 in taiHEN's config.txt. A copy of the config is kept first.",
+		'Asks GitHub whether a newer Tweaks/Plugins is out. If it is, this installer can download it and update itself.',
+		'Takes Tweaks/Plugins out of config.txt and deletes the plugin. Your settings and logs stay.',
+		'More for the PS Vita by the author of Tweaks/Plugins. Select to see each one, and to install it from here.',
+		'Leaves without changing anything.',
+	];
+	const FEATURES = [
+		['One menu', "Every plugin's settings page, under HENkaku Settings"],
+		['Finds them itself', 'A new plugin shows up the next time Settings opens'],
+		['Your choice', 'Switch each plugin between here and its own place'],
+		['taiHEN Plugins', 'Turn the plugins in your config on or off, and reboot'],
+		['Safe', 'If Settings ever crashes on it, it steps out of the way'],
+	];
+	// name, what it is, its emblem's colour and letter, what it does, where it is
+	const PROJECTS = [
+		['Engram', 'Plugin', [0x2A, 0x7C, 0xFF], 'E',
+			'Home screen tweaks: scroll animations, Motion Depth, 3D icon layouts and your own fonts.',
+			'github.com/chazzarchibald-ops/engram-vita'],
+		['CyberFlow Launcher', 'App', [0xFC, 0xE4, 0x2A], 'C',
+			"A Cyberpunk 2077 styled game launcher, built on RetroFlow's 3D coverflow library.",
+			'github.com/chazzarchibald-ops/CyberFLow-Launcher'],
+	];
+	const CARD_X = RIGHT_X + 16, CARD_W = 440, CARD_Y = PANEL_Y + 52, CARD_H = 112, CARD_GAP = 10;
+	// The projects' window: what each one does, its photos, and what can be done with it.
+	// An action: what it is, its label, and its size as GitHub lists it.
+	const DETAILS = [
+		{
+			photos: 'engram',
+			release: 'Engram-vita 1.6  (19 Nov 2026)', // on the Vita: looked up on GitHub as the window opens
+			what: [
+				"Scroll Animations: 15 effects for the icons as you scroll between the home screen's pages.",
+				'Motion Depth: tilt the Vita and the icons float above the wallpaper.',
+				'Icon Placement: open book, sphere and inside-a-sphere layouts.',
+				'App Page Animation: effects as you swipe between your open apps.',
+				'Fonts: your own fonts for the home screen, the lock screen and apps.',
+				'Install puts the Engram Installer on the home screen: an app of its own, like this one, that installs Engram and keeps it up to date.',
+			],
+			icon: 'engram',
+			hasData: false,
+			releases: [
+				{
+					name: 'Engram-vita 1.6', date: '19 Nov 2026', pre: true, install: '435 KB', data: '',
+					notes: [
+						[0, 'Engram 1.6 comes with an installer: a VPK that installs, updates and uninstalls Engram for you.'],
+						[3, ''],
+						[1, 'New'],
+						[2, 'Engram Installer: puts engram.suprx in ur0:tai and its lines in the taiHEN config, and checks GitHub for new versions.'],
+						[2, 'My other projects: more for the PS Vita by the same author, with photos, releases and an Install button each.'],
+						[2, 'Fonts > Apps sets itself up.'],
+						[3, ''],
+						[1, 'Fixed'],
+						[2, 'Font fixes for the home screen and the lock screen.'],
+					],
+				},
+				{
+					name: 'Engram-vita 1.5', date: '13 Nov 2026', pre: false, install: '', data: '',
+					notes: [
+						[0, 'Motion Depth, Icon Placement, App Page Animation and Fonts.'],
+						[3, ''],
+						[0, 'This release has no installer. Copy engram.suprx to ur0:tai yourself, or install a newer release.'],
+					],
+				},
+				{
+					name: 'Engram-vita 1.0', date: '9 Nov 2026', pre: false, install: '', data: '',
+					notes: [
+						[0, 'First release: Cylinder-style scroll animations for the home screen, with 15 effects.'],
+					],
+				},
+			],
+			steps: () => [
+				[COLOR_DIM, 'Downloading engram_installer.vpk... 100%'],
+				[COLOR_TEXT, 'Downloaded engram_installer.vpk (435 KB).'],
+				[COLOR_GOOD, 'Its SHA-256 is the one GitHub lists.'],
+				[COLOR_TEXT, 'Unpacked 16 files. Installing...'],
+				[COLOR_GOOD, 'Installed Engram Installer. Its bubble is on the home screen.'],
+				[COLOR_GOOD, 'Done. Open Engram Installer from the home screen to install Engram.'],
+			],
+		},
+		{
+			photos: 'cyberflow',
+			release: 'CyberFlow 1.0.0 - First Release  (6 Oct 2026)',
+			what: [
+				'A Cyberpunk 2077 inspired mod of RetroFlow Launcher: its 3D coverflow and its retro game library with no bubbles needed, in a Cyberpunk 2077 interface.',
+				'Animated video backgrounds and music, different for each theme.',
+				'10 theme presets, plus Classic and a slot for your own: Arasaka, Dogtown, Night City, Edgerunners and more.',
+				'A Cyberdeck RAM header, a scanner-style game information screen, and a settings hub like the game\'s pause menu.',
+				'Everything RetroFlow does: categories, collections, favourites, search, cover downloads and 20 languages.',
+				'The data files are the themes\' videos and music. They go in ux0:data/RetroFlow.',
+			],
+			icon: 'cyberflow',
+			hasData: true,
+			releases: [
+				{
+					name: 'CyberFlow 1.0.0 - First Release', date: '6 Oct 2026', pre: false, install: '14.6 MB', data: '422 MB',
+					notes: [
+						[0, 'The first public release of CyberFlow, a Cyberpunk 2077 inspired mod of'],
+						[0, 'RetroFlow Launcher for the PS Vita. It keeps the 3D coverflow and the'],
+						[0, '"no bubbles needed" retro library of RetroFlow and wraps it in a neon'],
+						[0, 'Night City interface.'],
+						[3, ''],
+						[0, 'Highlights'],
+						[0, 'Cyberpunk 2077 UI: Rajdhani font, neon cyan/red palette, chamfered'],
+						[0, 'panels, scan lines and glitch accents throughout.'],
+						[0, 'Animated MP4 backgrounds per theme, with matching looping soundtracks.'],
+						[0, '10 themes plus Classic and Custom: Arasaka, Dogtown, Night City,'],
+						[0, 'Ending, Main Theme, Mikoshi, Alt Cunningham, Just Another Weapon'],
+						[0, '(Phantom Liberty), Nocturne OP55N1 and Edgerunners, each with a live'],
+						[0, 'preview and thumbnail.'],
+					],
+				},
+			],
+			steps: () => [
+				[COLOR_DIM, 'Downloading CyberFlow_1.0.0.vpk (14.6 MB)... 100%'],
+				[COLOR_GOOD, 'Its SHA-256 is the one GitHub lists.'],
+				[COLOR_GOOD, 'Installed CyberFlow Launcher. Its bubble is on the home screen.'],
+			].concat(dataFiles ? [
+				[COLOR_DIM, 'Downloading CyberFlow_data.zip (422 MB)... 100%'],
+				[COLOR_GOOD, 'Its SHA-256 is the one GitHub lists.'],
+				[COLOR_GOOD, 'Extracted 33 files to ux0:data/RetroFlow.'],
+				[COLOR_GOOD, 'Done.'],
+			] : [
+				[COLOR_TEXT, 'The data files were left out: the themes\' videos and music.'],
+				[COLOR_GOOD, 'Done.'],
+			]),
+		},
+	];
+	const WIN_Y = 84, WIN_H = 364, LIST_X = 32, LIST_W = 250, SIDE_X = 298, SIDE_W = 630;
+	const VIEW_X = SIDE_X + 16, VIEW_W = 598, VIEW_Y = WIN_Y + 14, VIEW_H = 284; // what scrolls
+	const PHOTO_W = 448, PHOTO_H = 254, BUTTON_Y = WIN_Y + WIN_H - 54, BUTTON_H = 40;
+	let dataFiles = true;
+	const photoImages = {};
+	if (typeof PHOTO_URIS !== 'undefined')
+		for (const key of Object.keys(PHOTO_URIS))
+			photoImages[key] = PHOTO_URIS[key].map((uri) => {
+				const im = new Image();
+				im.onload = () => { if (view === VIEW_WINDOW) { renderUi(); if (!running) draw(0); } };
+				im.src = uri;
+				return im;
+			});
+	const LOGS = [
+		[
+			[COLOR_GOOD, 'Copied tweaks.suprx (28636 bytes) to ur0:tai/tweaks.suprx.'],
+			[COLOR_DIM, "taiHEN's config: ur0:tai/config.txt"],
+			[COLOR_GOOD, 'Config updated. The old one is ur0:tai/config.txt.tweaks-installer-old'],
+			[COLOR_TEXT, 'Tweaks/Plugins is first under *NPXS10015, the Settings app.'],
+			[COLOR_GOOD, 'Done. Restart the Vita, then open Settings.'],
+		],
+		[
+			[COLOR_DIM, "taiHEN's config: ur0:tai/config.txt"],
+			[COLOR_GOOD, 'Config updated. The old one is ur0:tai/config.txt.tweaks-installer-old'],
+			[COLOR_GOOD, 'Deleted ur0:tai/tweaks.suprx.'],
+			[COLOR_TEXT, 'Your settings and logs stay in ur0:data/tweaks.'],
+			[COLOR_GOOD, 'Done. Restart the Vita to finish.'],
+		],
+	];
+
+	// What the app would report.
+	function logLines() {
+		if (selected === MENU_UPDATE)
+			return [
+				[COLOR_DIM, 'Asking GitHub for the latest release...'],
+				[COLOR_GOOD, 'This installer has the latest Tweaks/Plugins (1.0.1).'],
+			];
+		return LOGS[selected === MENU_INSTALL ? 0 : 1];
+	}
+
+	const canvas = document.getElementById('screen');
+	const ctx = canvas.getContext('2d');
+	const images = [ctx.createImageData(SCREEN_W, SCREEN_H), ctx.createImageData(SCREEN_W, SCREEN_H)];
+	const fbs = images.map((im) => new Uint32Array(im.data.buffer));
+	const base = new Uint32Array(N), overlay = new Uint32Array(N), scene = new Uint32Array(N);
+	let chrome = null;
+	const layers = { base, overlay, scene };
+	const textCanvas = document.createElement('canvas');
+	textCanvas.width = SCREEN_W;
+	textCanvas.height = SCREEN_H;
+	const tc = textCanvas.getContext('2d', { willReadFrequently: true });
+	const liquid = createLiquid(false);
+
+	// ---- gfx.c, carried over ----
+
+	function drawBase() {
+		const bayer = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
+		const top = [14, 16, 24], bottom = [28, 34, 62];
+		for (let y = 0; y < SCREEN_H; y++) {
+			const v = [0, 1, 2].map((ch) => top[ch] * 256 + (((bottom[ch] - top[ch]) * 256 * y) / (SCREEN_H - 1) | 0));
+			for (let x = 0; x < SCREEN_W; x++) {
+				const d = bayer[y & 3][x & 3] * 16;
+				base[y * SCREEN_W + x] = (0xFF000000 | RGB((v[0] + d) >> 8, (v[1] + d) >> 8, (v[2] + d) >> 8)) >>> 0;
+			}
+		}
+	}
+
+	function overPx(p, rgb, a) {
+		if (a <= 0)
+			return;
+		if (a > 255)
+			a = 255;
+		const d = overlay[p];
+		const sa = a + (a >> 7), keep = 256 - sa;
+		const r = (((rgb & 0xFF) * sa) >> 8) + (((d & 0xFF) * keep) >> 8);
+		const g = ((((rgb >> 8) & 0xFF) * sa) >> 8) + ((((d >> 8) & 0xFF) * keep) >> 8);
+		const b = ((((rgb >> 16) & 0xFF) * sa) >> 8) + ((((d >> 16) & 0xFF) * keep) >> 8);
+		const da = a + (((d >>> 24) * keep) >> 8);
+		overlay[p] = (((da > 255 ? 255 : da) << 24) | RGB(Math.min(r, 255), Math.min(g, 255), Math.min(b, 255))) >>> 0;
+	}
+
+	function insideRounded(px, py, cx, cy, hw, hh, radius) {
+		const qx = Math.abs(px - cx) - (hw - radius), qy = Math.abs(py - cy) - (hh - radius);
+		const ox = qx > 0 ? qx : 0, oy = qy > 0 ? qy : 0;
+		const outside = ox > 0 && oy > 0 ? Math.sqrt(ox * ox + oy * oy) : ox + oy;
+		const inner = qx > qy ? qx : qy;
+		return radius - outside - (inner < 0 ? inner : 0);
+	}
+
+	function panel(x, y, w, h, radius, rgb, alpha) {
+		const cx = x + w * 0.5, cy = y + h * 0.5;
+		for (let j = Math.max(0, y); j < y + h && j < SCREEN_H; j++)
+			for (let i = Math.max(0, x); i < x + w && i < SCREEN_W; i++) {
+				const d = insideRounded(i + 0.5, j + 0.5, cx, cy, w * 0.5, h * 0.5, radius);
+				if (d <= -0.5)
+					continue;
+				const cover = d >= 0.5 ? 1.0 : d + 0.5;
+				const p = j * SCREEN_W + i;
+				overPx(p, rgb, (alpha * cover) | 0);
+				const edge = 1.0 - Math.abs(d - 1.0);
+				if (edge > 0) {
+					const strength = 26 + ((22 * (y + h - j)) / h | 0);
+					overPx(p, RGB(255, 255, 255), (strength * edge) | 0);
+				}
+			}
+	}
+
+	function compose() {
+		for (let p = 0; p < N; p++) {
+			const o = overlay[p], b = base[p];
+			const oa = o >>> 24;
+			if (!oa) {
+				scene[p] = b;
+				continue;
+			}
+			const keep = 256 - oa - (oa >> 7);
+			const r = (o & 0xFF) + (((b & 0xFF) * keep) >> 8);
+			const g = ((o >> 8) & 0xFF) + ((((b >> 8) & 0xFF) * keep) >> 8);
+			const bl = ((o >> 16) & 0xFF) + ((((b >> 16) & 0xFF) * keep) >> 8);
+			scene[p] = (0xFF000000 | RGB(Math.min(r, 255), Math.min(g, 255), Math.min(bl, 255))) >>> 0;
+		}
+	}
+
+	// ---- text: the browser draws the letters, where the Vita uses its own font library ----
+
+	const css = (c, a) => 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (a === undefined ? 1 : a) + ')';
+
+	function text(x, y, size, color, s, alpha) {
+		tc.font = size + 'px ' + font;
+		tc.textBaseline = 'alphabetic';
+		tc.fillStyle = css(color, alpha);
+		tc.fillText(s, x, y + Math.floor(size * 1.12));
+		return tc.measureText(s).width;
+	}
+
+	function textWidth(size, s) {
+		tc.font = size + 'px ' + font;
+		return tc.measureText(s).width;
+	}
+
+	function textShadow(x, y, size, color, s) {
+		text(x + 1, y + 2, size, [0, 0, 0], s, 0.59);
+		text(x - 1, y + 1, size, [0, 0, 0], s, 0.35);
+		return text(x, y, size, color, s);
+	}
+
+	function textWrap(x, y, width, size, lineH, color, s) {
+		let line = '';
+		for (const word of s.split(' ')) {
+			const tryLine = line ? line + ' ' + word : word;
+			if (line && textWidth(size, tryLine) > width) {
+				text(x, y, size, color, line);
+				y += lineH;
+				line = word;
+			} else {
+				line = tryLine;
+			}
+		}
+		if (line) {
+			text(x, y, size, color, line);
+			y += lineH;
+		}
+		return y;
+	}
+
+	// The text drawn so far goes over the overlay.
+	function mergeText() {
+		const data = tc.getImageData(0, 0, SCREEN_W, SCREEN_H).data;
+		for (let p = 0, i = 0; p < N; p++, i += 4)
+			if (data[i + 3])
+				overPx(p, RGB(data[i], data[i + 1], data[i + 2]), data[i + 3]);
+		tc.clearRect(0, 0, SCREEN_W, SCREEN_H);
+	}
+
+	// ---- main.c's render_ui ----
+
+	const VIEW_MENU = 0, VIEW_WORKING = 1, VIEW_RESULT = 2, VIEW_WINDOW = 3;
+	// (the preview opens on the newest row, My other projects; the app opens on the first)
+	let view = VIEW_MENU, selected = MENU_PROJECTS, installed = false, workingFrames = 0, project = 0, opened = false;
+	// In the window: which side the buttons act on, the chosen action, how far the right side is
+	// scrolled, the photo showing, and an install under way (its lines, and how many are up).
+	let side = false, action = 0, scroll = 0, scrollMax = 0, photo = 0, job = null;
+	// Behind a project's Download button: its releases. The one chosen, and the same of its right side.
+	let level = 0, rel = 0, relAction = 0, relScroll = 0, relScrollMax = 0;
+	const iconImages = {};
+	if (typeof ICON_URIS !== 'undefined')
+		for (const key of Object.keys(ICON_URIS)) {
+			iconImages[key] = new Image();
+			iconImages[key].onload = () => { renderUi(); if (!running) draw(0); };
+			iconImages[key].src = ICON_URIS[key];
+		}
+
+	// The buttons of the right side showing: a project's, or a release's.
+	function windowButtons() {
+		const detail = DETAILS[project];
+		if (level === 0)
+			return [['download', 'Download', ''], ['page', 'Open its page', '']];
+		const r = detail.releases[rel];
+		if (!r)
+			return [];
+		const list = [];
+		if (rel === 0 && r.install) { // only the newest release installs from here
+			list.push(['install', 'Install', r.install]);
+			if (detail.hasData && r.data)
+				list.push(['data', 'Data files: ' + (dataFiles ? 'On' : 'Off'), r.data]);
+		}
+		list.push(['releasePage', 'Open release page', '']);
+		return list;
+	}
+	let hits = []; // where the window's names and buttons are, for clicks
+
+	// A pretend install: its lines come up one at a time.
+	function startJob(lines) {
+		const mine = job = { lines, shown: 1 };
+		const timer = setInterval(() => {
+			if (job !== mine || mine.shown >= lines.length) {
+				clearInterval(timer);
+				return;
+			}
+			mine.shown++;
+			renderUi();
+			if (!running)
+				draw(0);
+		}, 700);
+	}
+
+	// A project's emblem: its bubble's own picture cut to a circle, or a ball in its colour with its letter.
+	function emblem(index, cx, cy, r, size) {
+		const [, , color, letter] = PROJECTS[index];
+		const icon = iconImages[DETAILS[index].icon];
+		if (icon && icon.complete && icon.naturalWidth) {
+			tc.save();
+			tc.beginPath();
+			tc.arc(cx, cy, r, 0, Math.PI * 2);
+			tc.clip();
+			tc.drawImage(icon, cx - r, cy - r, r * 2, r * 2);
+			tc.restore();
+			return;
+		}
+		tc.fillStyle = css(color);
+		tc.beginPath();
+		tc.arc(cx, cy, r, 0, Math.PI * 2);
+		tc.fill();
+		tc.fillStyle = css([255, 255, 255], 0.3);
+		tc.beginPath();
+		tc.arc(cx - r * 0.29, cy - r * 0.33, r * 0.46, 0, Math.PI * 2);
+		tc.fill();
+		font = TITLE_FONT;
+		text(cx - textWidth(size, letter) / 2, cy - size * 0.68, size, [10, 12, 20], letter);
+		font = FONT;
+	}
+
+	function scrollBar(at, max) {
+		if (max <= 0)
+			return;
+		const total = VIEW_H + max, bar = Math.max(24, VIEW_H * VIEW_H / total);
+		tc.fillStyle = css([255, 255, 255], 0.1);
+		tc.fillRect(VIEW_X + VIEW_W + 6, VIEW_Y, 4, VIEW_H);
+		tc.fillStyle = css(COLOR_ACCENT, 0.75);
+		tc.fillRect(VIEW_X + VIEW_W + 6, VIEW_Y + (VIEW_H - bar) * at / max, 4, bar);
+	}
+
+	function fitText(s, size, width) {
+		if (textWidth(size, s) <= width)
+			return s;
+		while (s.length > 1 && textWidth(size, s + '...') > width)
+			s = s.slice(0, -1);
+		return s + '...';
+	}
+
+	// The window: names on the left; on the right something that scrolls, over its buttons, which
+	// don't. First the projects, each with a photo and what it does; behind a project's Download
+	// button, its releases, each with its notes and the buttons that install it.
+	function renderWindow() {
+		const detail = DETAILS[project], shots = photoImages[detail.photos] || [];
+		const release = level === 1 ? detail.releases[rel] : null;
+		hits = [];
+		overlay.fill(0);
+		panel(LIST_X, WIN_Y, LIST_W, WIN_H, 20, PANEL, PANEL_ALPHA);
+		panel(SIDE_X, WIN_Y, SIDE_W, WIN_H, 20, PANEL, PANEL_ALPHA);
+		panel(LEFT_X, 464, 896, 46, 14, PANEL, PANEL_ALPHA);
+		if (level === 0)
+			for (let i = 0; i < PROJECTS.length; i++) {
+				const y = WIN_Y + 16 + i * 68;
+				if (i === project)
+					panel(LIST_X + 12, y, LIST_W - 24, 58, 12, side ? RGB(255, 255, 255) : ACCENT, side ? 22 : 64);
+				hits.push(['name', i, LIST_X + 12, y, LIST_W - 24, 58]);
+			}
+		else
+			for (let i = 0; i < detail.releases.length; i++) {
+				const y = WIN_Y + 66 + i * 58;
+				if (i === rel)
+					panel(LIST_X + 12, y, LIST_W - 24, 52, 12, side ? RGB(255, 255, 255) : ACCENT, side ? 22 : 64);
+				hits.push(['name', i, LIST_X + 12, y, LIST_W - 24, 52]);
+			}
+		// the buttons, left to right
+		const buttons = windowButtons(), chosen = level === 0 ? action : relAction;
+		let bx = VIEW_X;
+		const widths = buttons.map(([, label, size]) => Math.ceil(textWidth(15, label) + (size ? textWidth(12.5, size) + 10 : 0) + 32));
+		buttons.forEach((b, i) => {
+			const on = side && i === chosen && !job;
+			panel(bx, BUTTON_Y, widths[i], BUTTON_H, 12, on ? ACCENT : RGB(255, 255, 255), on ? 84 : 18);
+			hits.push(['action', i, bx, BUTTON_Y, widths[i], BUTTON_H]);
+			bx += widths[i] + 10;
+		});
+
+		font = TITLE_FONT;
+		textShadow(40, 22, 36, COLOR_TEXT, 'My other projects');
+		font = FONT;
+		const version = 'Installer 1.0  -  Tweaks/Plugins 1.0.1';
+		textShadow(SCREEN_W - 40 - textWidth(16, version), 42, 16, COLOR_DIM, version);
+		if (level === 0) {
+			for (let i = 0; i < PROJECTS.length; i++) {
+				const [name, kind] = PROJECTS[i];
+				const y = WIN_Y + 16 + i * 68;
+				emblem(i, LIST_X + 42, y + 29, 17, 20);
+				text(LIST_X + 68, y + 8, 15.5, i === project ? COLOR_TEXT : COLOR_DIM, name);
+				text(LIST_X + 68, y + 31, 12.5, i === project ? COLOR_ACCENT : COLOR_DIM, kind);
+			}
+		} else { // the project, and its releases under it
+			emblem(project, LIST_X + 34, WIN_Y + 32, 17, 20);
+			text(LIST_X + 60, WIN_Y + 12, 15.5, COLOR_TEXT, PROJECTS[project][0]);
+			text(LIST_X + 60, WIN_Y + 34, 12.5, COLOR_ACCENT, 'Releases');
+			detail.releases.forEach((r, i) => {
+				const y = WIN_Y + 66 + i * 58;
+				text(LIST_X + 26, y + 6, 14.5, i === rel ? COLOR_TEXT : COLOR_DIM, fitText(r.name, 14.5, LIST_W - 24 - 28));
+				text(LIST_X + 26, y + 28, 12.5, i === rel ? COLOR_ACCENT : COLOR_DIM, r.pre ? 'Pre-release' : r.date);
+			});
+		}
+
+		// the right side: what scrolls, cut off at the edges of its space
+		tc.save();
+		tc.beginPath();
+		tc.rect(VIEW_X, VIEW_Y, VIEW_W + 14, VIEW_H);
+		tc.clip();
+		if (job) {
+			text(VIEW_X + 8, VIEW_Y + 4, 16, COLOR_ACCENT, (job.shown < job.lines.length ? 'Installing ' : 'Installed ') + PROJECTS[project][0]);
+			let y = VIEW_Y + 38;
+			for (let i = 0; i < job.shown; i++)
+				y = textWrap(VIEW_X + 8, y, VIEW_W - 16, 14, 18, job.lines[i][0], job.lines[i][1]) + 4;
+		} else if (level === 0) {
+			let y = VIEW_Y - scroll;
+			const px = VIEW_X + ((VIEW_W - PHOTO_W) >> 1);
+			tc.save();
+			tc.beginPath();
+			tc.roundRect(px, y, PHOTO_W, PHOTO_H, 10);
+			tc.clip();
+			tc.fillStyle = css([24, 28, 44]);
+			tc.fillRect(px, y, PHOTO_W, PHOTO_H);
+			if (shots[photo] && shots[photo].complete && shots[photo].naturalWidth)
+				tc.drawImage(shots[photo], px, y, PHOTO_W, PHOTO_H);
+			tc.restore();
+			y += PHOTO_H + 8;
+			text(px, y, 13, COLOR_DIM, 'Photo ' + (photo + 1) + ' of ' + Math.max(shots.length, 1));
+			const more = 'L / R: more photos';
+			text(px + PHOTO_W - textWidth(13, more), y, 13, COLOR_DIM, more);
+			y += 28;
+			text(VIEW_X + 8, y, 16, COLOR_ACCENT, 'Newest release');
+			text(VIEW_X + 8 + textWidth(16, 'Newest release') + 14, y + 2, 14, COLOR_TEXT, detail.release);
+			y += 34;
+			text(VIEW_X + 8, y, 16, COLOR_ACCENT, 'What it does');
+			y += 28;
+			for (const line of detail.what) {
+				tc.fillStyle = css(COLOR_ACCENT);
+				tc.beginPath();
+				tc.arc(VIEW_X + 13, y + 10, 2.5, 0, Math.PI * 2);
+				tc.fill();
+				y = textWrap(VIEW_X + 26, y, VIEW_W - 40, 14, 19, COLOR_TEXT, line) + 6;
+			}
+			scrollMax = Math.max(0, Math.ceil(y + 6 + scroll - VIEW_Y - VIEW_H));
+			scrollBar(scroll, scrollMax);
+		} else if (release) { // its name, when it came out, and its notes
+			let y = VIEW_Y - relScroll + 2;
+			y = textWrap(VIEW_X + 8, y, VIEW_W - 16, 18, 24, COLOR_TEXT, release.name);
+			text(VIEW_X + 8, y, 13, COLOR_ACCENT, release.date + (release.pre ? '    Pre-release' : ''));
+			y += 30;
+			for (const [kind, line] of release.notes) {
+				if (kind === 3) {
+					y += 9;
+				} else if (kind === 1) {
+					y = textWrap(VIEW_X + 8, y + 5, VIEW_W - 16, 15.5, 21, COLOR_ACCENT, line) + 3;
+				} else if (kind === 2) {
+					tc.fillStyle = css(COLOR_ACCENT);
+					tc.beginPath();
+					tc.arc(VIEW_X + 13, y + 10, 2.5, 0, Math.PI * 2);
+					tc.fill();
+					y = textWrap(VIEW_X + 26, y, VIEW_W - 40, 14, 19, COLOR_TEXT, line) + 3;
+				} else {
+					y = textWrap(VIEW_X + 8, y, VIEW_W - 16, 14, 19, COLOR_TEXT, line) + 3;
+				}
+			}
+			relScrollMax = Math.max(0, Math.ceil(y + 8 + relScroll - VIEW_Y - VIEW_H));
+			scrollBar(relScroll, relScrollMax);
+		}
+		tc.restore();
+
+		bx = VIEW_X;
+		buttons.forEach(([kind, label, size], i) => {
+			const on = side && i === chosen && !job;
+			const w = text(bx + 16, BUTTON_Y + 9, 15, job ? COLOR_DIM : on ? COLOR_TEXT : kind === 'data' && !dataFiles ? COLOR_DIM : COLOR_TEXT, label);
+			if (size)
+				text(bx + 16 + w + 10, BUTTON_Y + 12, 12.5, job ? COLOR_DIM : COLOR_ACCENT, size);
+			bx += widths[i] + 10;
+		});
+
+		const photos = level === 0 ? 'L / R: photos      ' : '';
+		text(LEFT_X + 24, 476, 16, COLOR_DIM,
+			job ? (job.shown < job.lines.length ? 'One moment... Keep this app open.' : backName() + ': back')
+			: opened ? 'Opening its page in the browser...'
+				: side ? 'Left / Right: choose      Up / Down: scroll      ' + photos + enterName() + ': select      ' + backName() + ': back'
+					: 'Up / Down: choose      ' + photos + enterName() + ': its buttons      ' + backName() + ': back');
+		mergeText();
+		compose();
+		full[0] = full[1] = true;
+	}
+
+	// The other projects, in the right panel: a card each, the chosen one lit.
+	function projectCards(chosen) {
+		for (let i = 0; i < PROJECTS.length; i++)
+			panel(CARD_X, CARD_Y + i * (CARD_H + CARD_GAP), CARD_W, CARD_H, 14, i === chosen ? ACCENT : RGB(255, 255, 255),
+				i === chosen ? 64 : 14);
+	}
+
+	function projectText(chosen) {
+		text(RIGHT_X + 24, PANEL_Y + 18, 16, COLOR_ACCENT, 'My other projects');
+		const more = 'More for the PS Vita';
+		text(RIGHT_X + 448 - textWidth(13, more), PANEL_Y + 21, 13, COLOR_DIM, more);
+		for (let i = 0; i < PROJECTS.length; i++) {
+			const [name, kind, color, letter, about, where] = PROJECTS[i];
+			const x = CARD_X, y = CARD_Y + i * (CARD_H + CARD_GAP);
+			emblem(i, x + 40, y + 40, 24, 28);
+			text(x + 78, y + 12, 19, COLOR_TEXT, name);
+			text(x + CARD_W - 18 - textWidth(12.5, kind), y + 17, 12.5, COLOR_ACCENT, kind);
+			textWrap(x + 78, y + 39, CARD_W - 78 - 18, 13.5, 17, COLOR_DIM, about);
+			text(x + 18, y + 84, 13, i === chosen ? COLOR_TEXT : COLOR_ACCENT, where);
+		}
+	}
+	const full = [true, true];
+
+	function renderUi() {
+		if (view === VIEW_WINDOW) {
+			renderWindow();
+			return;
+		}
+		if (chrome) {
+			overlay.set(chrome);
+		} else {
+			overlay.fill(0);
+			panel(LEFT_X, PANEL_Y, 404, PANEL_H, 20, PANEL, PANEL_ALPHA);
+			panel(RIGHT_X, PANEL_Y, 472, PANEL_H, 20, PANEL, PANEL_ALPHA);
+			panel(LEFT_X, 464, 896, 46, 14, PANEL, PANEL_ALPHA);
+			font = TITLE_FONT;
+			textShadow(40, 20, 54, COLOR_TEXT, 'Tweaks/Plugins');
+			font = FONT;
+			textShadow(44, 90, 19, COLOR_DIM, "Your plugins' settings in one place");
+			const version = 'Installer 1.0  -  Tweaks/Plugins 1.0.1';
+			textShadow(SCREEN_W - 40 - textWidth(16, version), 42, 16, COLOR_DIM, version);
+			mergeText();
+			chrome = overlay.slice();
+		}
+
+		const listed = view === VIEW_MENU && selected === MENU_PROJECTS;
+		for (let i = 0; i < MENU.length; i++)
+			if (i === selected && view === VIEW_MENU)
+				panel(LEFT_X + 14, ROW_Y + i * ROW_H - 4, 376, 31, 11, ACCENT, 64);
+		if (listed)
+			projectCards(-1);
+
+		tc.fillStyle = css(installed ? COLOR_GOOD : COLOR_DIM);
+		tc.beginPath();
+		tc.arc(LEFT_X + 30, PANEL_Y + 31, 5.5, 0, Math.PI * 2);
+		tc.fill();
+		text(LEFT_X + 46, PANEL_Y + 19, 16, COLOR_DIM, installed ? 'Tweaks/Plugins is installed' : "Tweaks/Plugins isn't installed yet");
+		for (let i = 0; i < MENU.length; i++) {
+			const on = i === selected && view === VIEW_MENU;
+			text(LEFT_X + 32, ROW_Y + i * ROW_H, ROW_TEXT, on ? COLOR_TEXT : COLOR_DIM, MENU[i]);
+			if (i === MENU_FONTS) {
+				const state = addFonts ? 'On' : 'Off';
+				text(LEFT_X + 372 - textWidth(ROW_TEXT, state), ROW_Y + i * ROW_H, ROW_TEXT, addFonts ? COLOR_ACCENT : COLOR_DIM, state);
+			}
+		}
+		textWrap(LEFT_X + 32, PANEL_Y + 254, 344, 14, 19, COLOR_DIM, MENU_HELP[selected]);
+
+		if (listed) {
+			projectText(-1);
+		} else if (view === VIEW_MENU) {
+			text(RIGHT_X + 24, PANEL_Y + 18, 16, COLOR_ACCENT, 'What Tweaks/Plugins does');
+			for (let i = 0; i < FEATURES.length; i++) {
+				const y = PANEL_Y + 50 + i * 46;
+				text(RIGHT_X + 24, y, 19, COLOR_TEXT, FEATURES[i][0]);
+				text(RIGHT_X + 24, y + 24, 13.5, COLOR_DIM, FEATURES[i][1]);
+			}
+			text(RIGHT_X + 24, PANEL_Y + 284, 14, COLOR_ACCENT, "It's in Settings, under HENkaku Settings.");
+		} else {
+			const working = view === VIEW_WORKING;
+			text(RIGHT_X + 24, PANEL_Y + 18, 16, working ? COLOR_ACCENT : COLOR_GOOD, working ? 'Working...' : 'Done');
+			let y = PANEL_Y + 52;
+			if (!working)
+				for (const [color, line] of logLines())
+					y = textWrap(RIGHT_X + 24, y, 424, 14, 18, color, line) + 4;
+		}
+
+		text(LEFT_X + 24, 476, 16, COLOR_DIM,
+			view === VIEW_RESULT ? (selected === MENU_UPDATE ? '' : 'START: restart the Vita now        ') + backName() + ': back to the menu'
+			: view === VIEW_WORKING ? 'One moment...'
+				: 'Up / Down: choose        ' + enterName() + ': select        START: exit');
+		mergeText();
+		compose();
+		full[0] = full[1] = true;
+	}
+
+	// ---- main.c's loop ----
+
+	let buf = 0, clock = 0, last = 0, running = true, frames = 0, spent = 0;
+	const rate = document.getElementById('rate');
+
+	function press(button) {
+		if (view === VIEW_MENU) {
+			if (button === 'up')
+				selected = (selected + MENU.length - 1) % MENU.length;
+			else if (button === 'down')
+				selected = (selected + 1) % MENU.length;
+			else if (button === 'select' && selected === MENU_FONTS)
+				addFonts = !addFonts;
+			else if ((button === 'select' || button === 'right') && selected === MENU_PROJECTS) {
+				view = VIEW_WINDOW;
+				level = 0;
+				project = 0;
+				side = opened = false;
+				action = scroll = photo = 0;
+				job = null;
+			} else if (button === 'select' && selected !== MENU.length - 1) {
+				view = VIEW_WORKING;
+				workingFrames = 0;
+			} else if (button !== 'select')
+				return;
+		} else if (view === VIEW_WINDOW) {
+			const detail = DETAILS[project], shots = (photoImages[detail.photos] || []).length || 1;
+			const buttons = windowButtons(), releases = level === 1;
+			opened = false;
+			if (job) {
+				if ((button !== 'select' && button !== 'back') || job.shown < job.lines.length)
+					return;
+				job = null;
+			} else if (!releases && (button === 'l' || button === 'r')) {
+				photo = (photo + (button === 'l' ? shots - 1 : 1)) % shots;
+			} else if (button === 'start') {
+				view = VIEW_MENU;
+			} else if (!side) { // the names
+				if ((button === 'up' || button === 'down') && !releases) {
+					project = (project + (button === 'up' ? PROJECTS.length - 1 : 1)) % PROJECTS.length;
+					action = scroll = photo = 0;
+				} else if ((button === 'up' || button === 'down') && detail.releases.length) {
+					rel = (rel + (button === 'up' ? detail.releases.length - 1 : 1)) % detail.releases.length;
+					relAction = relScroll = 0;
+				} else if ((button === 'select' || button === 'right') && buttons.length) {
+					side = true;
+				} else if (button === 'back' && releases) {
+					level = 0; // back to the project, on the button that led here
+					side = true;
+				} else if (button === 'back') {
+					view = VIEW_MENU;
+				}
+			} else if (button === 'up' || button === 'down') {
+				if (releases)
+					relScroll = Math.max(0, Math.min(relScrollMax, relScroll + (button === 'up' ? -56 : 56)));
+				else
+					scroll = Math.max(0, Math.min(scrollMax, scroll + (button === 'up' ? -56 : 56)));
+			} else if (button === 'back') {
+				side = false; // back to the names
+			} else if (button === 'left') {
+				if ((releases ? relAction : action) > 0)
+					releases ? relAction-- : action--;
+				else
+					side = false; // (the names are what is to the left of the first button)
+			} else if (button === 'right') {
+				if (releases)
+					relAction = Math.min(buttons.length - 1, relAction + 1);
+				else
+					action = Math.min(buttons.length - 1, action + 1);
+			} else if (button === 'select' && buttons.length) {
+				const kind = buttons[releases ? relAction : action][0];
+				if (kind === 'download') { // its releases
+					level = 1;
+					side = false;
+					rel = relAction = relScroll = 0;
+				} else if (kind === 'data') {
+					dataFiles = !dataFiles;
+				} else if (kind === 'page' || kind === 'releasePage') {
+					opened = true; // on the Vita: the page, in the Internet Browser
+				} else {
+					startJob(detail.steps());
+				}
+			}
+		} else if (view === VIEW_RESULT) {
+			if (button !== 'select' && button !== 'back')
+				return;
+			view = VIEW_MENU;
+		} else {
+			return;
+		}
+		renderUi();
+		if (!running)
+			draw(0);
+	}
+
+	function draw(dt) {
+		if (view === VIEW_WORKING && ++workingFrames > 24) {
+			if (selected !== MENU_UPDATE)
+				installed = selected === MENU_INSTALL;
+			view = VIEW_RESULT;
+			renderUi();
+		}
+		clock += dt;
+		const before = performance.now();
+		liquid.frame(fbs[buf], buf, clock, full[buf], layers);
+		full[buf] = false;
+		spent += performance.now() - before;
+		ctx.putImageData(images[buf], 0, 0);
+		buf ^= 1;
+		if (++frames >= 30) {
+			rate.textContent = (spent / frames).toFixed(1) + ' ms a frame here';
+			frames = 0;
+			spent = 0;
+		}
+	}
+
+	function tick(now) {
+		if (!running)
+			return;
+		const dt = last ? Math.min(0.1, (now - last) / 1000) : 0;
+		last = now;
+		draw(dt);
+		requestAnimationFrame(tick);
+	}
+
+	function setRunning(on) {
+		running = on;
+		document.getElementById('btn-pause').textContent = on ? 'Pause' : 'Play';
+		if (on) {
+			last = 0;
+			requestAnimationFrame(tick);
+		}
+	}
+
+	// The text is drawn once and kept, so it is drawn again when the fonts arrive.
+	if (document.fonts && document.fonts.load)
+		Promise.all([document.fonts.load('16px Poppins'), document.fonts.load('54px Righteous')]).then(() => {
+			chrome = null;
+			renderUi();
+		}).catch(() => {});
+
+	document.getElementById('btn-up').addEventListener('click', () => press('up'));
+	document.getElementById('btn-down').addEventListener('click', () => press('down'));
+	document.getElementById('btn-select').addEventListener('click', () => press('select'));
+	document.getElementById('btn-back').addEventListener('click', () => press('back'));
+	document.getElementById('btn-layout').addEventListener('click', (e) => {
+		circleEnters = !circleEnters;
+		e.currentTarget.textContent = circleEnters ? 'O enters, X goes back' : 'X enters, O goes back';
+		e.currentTarget.setAttribute('aria-pressed', String(circleEnters));
+		renderUi();
+		if (!running)
+			draw(0);
+	});
+	document.getElementById('btn-left').addEventListener('click', () => press('left'));
+	document.getElementById('btn-right').addEventListener('click', () => press('right'));
+	document.getElementById('btn-l').addEventListener('click', () => press('l'));
+	document.getElementById('btn-r').addEventListener('click', () => press('r'));
+	document.getElementById('btn-start').addEventListener('click', () => press('start'));
+	document.getElementById('btn-pause').addEventListener('click', () => setRunning(!running));
+	document.addEventListener('keydown', (e) => {
+		const map = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', q: 'l', e: 'r', Enter: 'select', Backspace: 'back', Escape: 'start' };
+		map[circleEnters ? 'o' : 'x'] = 'select';
+		map[circleEnters ? 'x' : 'o'] = 'back';
+		const button = map[e.key];
+		if (!button || e.target.tagName === 'BUTTON' && e.key === 'Enter')
+			return;
+		e.preventDefault();
+		press(button);
+	});
+	canvas.addEventListener('click', (e) => {
+		const box = canvas.getBoundingClientRect();
+		const x = (e.clientX - box.left) * SCREEN_W / box.width, y = (e.clientY - box.top) * SCREEN_H / box.height;
+		if (view === VIEW_WINDOW) {
+			if (job) {
+				press('select');
+				return;
+			}
+			for (const [kind, i, hx, hy, hw, hh] of hits)
+				if (x >= hx && x < hx + hw && y >= hy && y < hy + hh) {
+					if (kind === 'name' && level === 0) {
+						if (project !== i)
+							action = scroll = photo = 0;
+						project = i;
+						side = opened = false;
+					} else if (kind === 'name') {
+						rel = i;
+						relAction = relScroll = 0;
+						side = opened = false;
+					} else {
+						side = true;
+						if (level === 0)
+							action = i;
+						else
+							relAction = i;
+						press('select');
+						return;
+					}
+					renderUi();
+					if (!running)
+						draw(0);
+					return;
+				}
+			return;
+		}
+		if (view !== VIEW_MENU) {
+			press('select');
+			return;
+		}
+		for (let i = 0; i < MENU.length; i++) {
+			const top = ROW_Y + i * ROW_H - 4;
+			if (x >= LEFT_X + 14 && x < LEFT_X + 390 && y >= top && y < top + 31) {
+				if (selected === i) {
+					press('select');
+				} else {
+					selected = i;
+					renderUi();
+					if (!running)
+						draw(0);
+				}
+			}
+		}
+	});
+
+	drawBase();
+	clock = 1.2;
+	renderUi();
+	draw(0);
+	draw(0);
+	const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	setRunning(!calm);
+})();
+</script>
+<script>
+'use strict';
+(function () {
+	// Each design is drawn in the icon's own 128 units, four times the size.
+	const S = 512, U = S / 128;
+	const rgb = (c, a) => 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (a === undefined ? 1 : a) + ')';
+	const TEAL = [[0, 124, 160], [110, 246, 200]], BLUE = [[20, 60, 235], [70, 190, 255]];
+	const VIOLET = [[92, 24, 228], [200, 130, 255]], MAGENTA = [[200, 20, 140], [255, 138, 196]];
+	const TITLE = 'Righteous, Poppins, "Segoe UI", sans-serif';
+
+	function ground(x, top, bottom, diagonal) {
+		const g = diagonal ? x.createLinearGradient(0, 0, 128, 128) : x.createLinearGradient(0, 0, 0, 128);
+		g.addColorStop(0, rgb(top));
+		g.addColorStop(1, rgb(bottom));
+		x.fillStyle = g;
+		x.fillRect(0, 0, 128, 128);
+	}
+	function glow(x, cx, cy, r, color, strength) {
+		const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+		g.addColorStop(0, rgb(color, strength));
+		g.addColorStop(1, rgb(color, 0));
+		x.fillStyle = g;
+		x.fillRect(0, 0, 128, 128);
+	}
+	// A ball lit from the upper left, as Engram's are.
+	function orb(x, cx, cy, r, hue, alpha) {
+		x.save();
+		x.globalAlpha = alpha === undefined ? 1 : alpha;
+		const g = x.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.05, cx, cy, r);
+		g.addColorStop(0, rgb(hue[1]));
+		g.addColorStop(1, rgb(hue[0]));
+		x.fillStyle = g;
+		x.beginPath();
+		x.arc(cx, cy, r, 0, Math.PI * 2);
+		x.fill();
+		const h = x.createRadialGradient(cx - r * 0.32, cy - r * 0.4, 0, cx - r * 0.32, cy - r * 0.4, r * 0.55);
+		h.addColorStop(0, 'rgba(255,255,255,0.6)');
+		h.addColorStop(1, 'rgba(255,255,255,0)');
+		x.fillStyle = h;
+		x.fill();
+		x.restore();
+	}
+	function pill(x, px, py, w, h, r) {
+		x.beginPath();
+		x.moveTo(px + r, py);
+		x.arcTo(px + w, py, px + w, py + h, r);
+		x.arcTo(px + w, py + h, px, py + h, r);
+		x.arcTo(px, py + h, px, py, r);
+		x.arcTo(px, py, px + w, py, r);
+		x.closePath();
+	}
+	function letter(x, s, cx, cy, size, fill, shade) {
+		x.font = size + 'px ' + TITLE;
+		x.textAlign = 'center';
+		x.textBaseline = 'middle';
+		x.fillStyle = shade;
+		x.fillText(s, cx + 1, cy + 1.6);
+		x.fillStyle = fill;
+		x.fillText(s, cx, cy);
+	}
+	// A down arrow: install.
+	function arrow(x, cx, cy, size, fill) {
+		const p = [[0, 1], [-1, 0], [-0.42, 0], [-0.42, -0.9], [0.42, -0.9], [0.42, 0], [1, 0]];
+		x.fillStyle = fill;
+		x.beginPath();
+		p.forEach(([a, b], i) => (i ? x.lineTo(cx + a * size, cy + b * size) : x.moveTo(cx + a * size, cy + b * size)));
+		x.closePath();
+		x.fill();
+	}
+	// The spanner Settings shows beside the Tweaks/Plugins row, on a layer of its own so its jaw can be cut out.
+	function spanner(x, cx, cy, size, fill) {
+		const layer = document.createElement('canvas');
+		layer.width = layer.height = S;
+		const l = layer.getContext('2d');
+		l.scale(U, U);
+		l.translate(cx, cy);
+		l.rotate(Math.PI / 4);
+		l.fillStyle = fill;
+		pill(l, -size * 0.1, -size * 0.12, size * 0.2, size * 0.62, size * 0.1);
+		l.fill();
+		l.beginPath();
+		l.arc(0, -size * 0.26, size * 0.25, 0, Math.PI * 2);
+		l.fill();
+		l.globalCompositeOperation = 'destination-out';
+		l.fillRect(-size * 0.085, -size * 0.56, size * 0.17, size * 0.3);
+		x.save();
+		x.setTransform(1, 0, 0, 1, 0, 0);
+		x.drawImage(layer, 0, 0);
+		x.restore();
+	}
+
+	const DESIGNS = [
+		['rows', 'Rows', 'Your plugins as rows of one list, the middle one chosen.', (x) => {
+			ground(x, [12, 14, 24], [30, 38, 74]);
+			glow(x, 64, 62, 64, [10, 200, 180], 0.32);
+			[VIOLET, TEAL, MAGENTA].forEach((hue, i) => {
+				const y = 31 + i * 24, on = i === 1;
+				pill(x, 22, y, 84, 19, 9.5);
+				x.fillStyle = on ? 'rgba(110,246,200,0.30)' : 'rgba(255,255,255,0.13)';
+				x.fill();
+				x.strokeStyle = on ? 'rgba(170,255,226,0.55)' : 'rgba(255,255,255,0.2)';
+				x.lineWidth = 0.8;
+				x.stroke();
+				orb(x, 33, y + 9.5, 6.2, hue);
+				pill(x, 45, y + 7, on ? 48 : 38, 5, 2.5);
+				x.fillStyle = on ? 'rgba(236,236,240,0.96)' : 'rgba(236,236,240,0.58)';
+				x.fill();
+			});
+		}],
+		['orbit', 'Orbit', "Engram's family: small balls gathered round one, with a T.", (x) => {
+			ground(x, [12, 14, 24], [28, 34, 62]);
+			[VIOLET, MAGENTA, BLUE, [[30, 90, 230], [140, 210, 255]], VIOLET, MAGENTA].forEach((hue, i) => {
+				const a = Math.PI / 6 + i * Math.PI / 3;
+				orb(x, 64 + Math.cos(a) * 43, 64 + Math.sin(a) * 43, 13, hue, 0.92);
+			});
+			glow(x, 64, 64, 46, [10, 200, 180], 0.3);
+			orb(x, 64, 64, 31, TEAL);
+			letter(x, 'T', 64, 66, 42, '#ffffff', 'rgba(0,70,90,0.9)');
+		}],
+		['spanner', 'Spanner', "Settings' own spanner, and an arrow for the installer.", (x) => {
+			ground(x, [8, 150, 160], [44, 84, 226], true);
+			glow(x, 26, 16, 78, [150, 255, 230], 0.5);
+			spanner(x, 59, 62, 96, '#ffffff');
+			x.fillStyle = '#ffffff';
+			x.beginPath();
+			x.arc(95, 96, 15, 0, Math.PI * 2);
+			x.fill();
+			arrow(x, 95, 97, 8.5, rgb([20, 120, 190]));
+		}],
+		['switch', 'Switch', 'One switch for all of them, turned on.', (x) => {
+			ground(x, [12, 14, 24], [30, 38, 74]);
+			glow(x, 64, 60, 60, [10, 200, 180], 0.3);
+			const g = x.createLinearGradient(24, 0, 104, 0);
+			g.addColorStop(0, rgb([0, 124, 160]));
+			g.addColorStop(1, rgb([110, 246, 200]));
+			pill(x, 24, 40, 80, 40, 20);
+			x.fillStyle = g;
+			x.fill();
+			x.strokeStyle = 'rgba(255,255,255,0.35)';
+			x.lineWidth = 1;
+			x.stroke();
+			x.fillStyle = 'rgba(0,40,60,0.35)';
+			x.beginPath();
+			x.arc(85, 62, 16, 0, Math.PI * 2);
+			x.fill();
+			orb(x, 84, 60, 16, [[214, 222, 236], [255, 255, 255]]);
+			[VIOLET, MAGENTA, BLUE].forEach((hue, i) => orb(x, 46 + i * 18, 96, 4.6, hue));
+		}],
+	];
+
+	const drawn = {};
+	function drawAll() {
+		DESIGNS.forEach(([key, , , draw]) => {
+			const c = drawn[key] || (drawn[key] = document.createElement('canvas'));
+			c.width = c.height = S;
+			const x = c.getContext('2d');
+			x.scale(U, U);
+			draw(x);
+		});
+	}
+	function copy(to, key) {
+		const x = to.getContext('2d');
+		x.imageSmoothingQuality = 'high';
+		x.clearRect(0, 0, to.width, to.height);
+		x.drawImage(drawn[key], 0, 0, to.width, to.height);
+	}
+
+	let chosen = 'rows';
+	try { chosen = localStorage.getItem('tw-bubble') || chosen; } catch (e) { /* not kept: the first design shows */ }
+	if (!DESIGNS.some((d) => d[0] === chosen))
+		chosen = 'rows';
+	const list = document.getElementById('designs');
+	const cards = DESIGNS.map(([key, name, idea]) => {
+		const card = document.createElement('button');
+		card.type = 'button';
+		card.className = 'design';
+		card.id = 'design-' + key;
+		const sized = (size, cls) => {
+			const c = document.createElement('canvas');
+			c.width = c.height = Math.min(S, size * 3);
+			c.className = 'bubble' + (cls ? ' ' + cls : '');
+			if (!cls) {
+				c.style.width = size + 'px';
+				c.style.height = size + 'px';
+			}
+			return c;
+		};
+		const big = sized(104, 'big'), mid = sized(44), small = sized(28);
+		const smalls = document.createElement('span');
+		smalls.className = 'smalls';
+		smalls.append(mid, small);
+		const words = document.createElement('span');
+		const title = document.createElement('span');
+		title.className = 'name';
+		title.textContent = name;
+		const text = document.createElement('span');
+		text.className = 'idea';
+		text.textContent = idea;
+		words.append(title, text);
+		card.append(big, words, smalls);
+		card.addEventListener('click', () => choose(key));
+		list.append(card);
+		return { key, name, card, canvases: [big, mid, small] };
+	});
+
+	function paint() {
+		drawAll();
+		cards.forEach((c) => c.canvases.forEach((to) => copy(to, c.key)));
+		copy(document.getElementById('home-own'), chosen);
+	}
+	function choose(key) {
+		chosen = key;
+		try { localStorage.setItem('tw-bubble', key); } catch (e) { /* not kept */ }
+		cards.forEach((c) => c.card.setAttribute('aria-pressed', c.key === key ? 'true' : 'false'));
+		document.getElementById('home-name').textContent = cards.find((c) => c.key === key).name;
+		copy(document.getElementById('home-own'), key);
+	}
+
+	if (typeof ICON_URIS !== 'undefined') {
+		document.getElementById('home-engram').src = ICON_URIS.engram;
+		document.getElementById('home-cyberflow').src = ICON_URIS.cyberflow;
+	}
+	paint();
+	choose(chosen);
+	// The T is in Righteous, which arrives after the page does.
+	if (document.fonts && document.fonts.load)
+		document.fonts.load('42px Righteous').then(paint).catch(() => {});
+})();
+</script>
