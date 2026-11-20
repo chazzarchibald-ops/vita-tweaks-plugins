@@ -129,18 +129,53 @@ static void log_clear(void) {
 
 // ---- files ----
 
-// Puts new_path in place of path: a rename, and where it can't replace a
-// file, path is removed first and, if the rename still fails, old is written
-// back.
-static bool replace_file(const char *path, const char *new_path, const char *old, int old_len) {
+// The system's answer to the step that failed when a file couldn't be put in
+// place: it goes on screen beside what went wrong.
+static int put_error;
+
+// Puts new_path, which holds fresh, in place of path. A rename, so that a
+// power cut can't leave half a file; where a rename can't replace a file,
+// path is removed first. Where the system will do neither (it has refused
+// both for a plugin's file in ur0:tai), fresh is written over the file that
+// is there. If nothing works, old is written back.
+static bool replace_file(const char *path, const char *new_path, const char *fresh, int fresh_len, const char *old,
+                         int old_len) {
+	put_error = 0;
 	if (sceIoRename(new_path, path) >= 0)
 		return true;
-	sceIoRemove(path);
-	if (sceIoRename(new_path, path) >= 0)
+	int removed = sceIoRemove(path);
+	int renamed = sceIoRename(new_path, path);
+	if (renamed >= 0)
 		return true;
+	if (file_write_checked(path, fresh, fresh_len))
+		return true;
+	put_error = file_write_error() ? file_write_error() : removed < 0 ? removed : renamed;
 	if (old)
 		file_write(path, old, old_len);
 	return false;
+}
+
+// Puts buf at path as a plugin goes in: written beside it and checked, put in
+// its place, and read back from there. If it can't be written beside it, it
+// is written where it goes.
+static bool put_file(const char *path, const char *buf, int len) {
+	char side[128];
+	snprintf(side, sizeof(side), "%s.installer-new", path);
+	bool put;
+	if (file_write_checked(side, buf, len)) {
+		put = replace_file(path, side, buf, len, NULL, 0);
+	} else {
+		put = file_write_checked(path, buf, len);
+		put_error = put ? 0 : file_write_error();
+	}
+	sceIoRemove(side);
+	if (put) {
+		int back_len = 0;
+		char *back = file_read(path, len + 1, &back_len);
+		put = back && back_len == len && memcmp(back, buf, (size_t)len) == 0;
+		free(back);
+	}
+	return put;
 }
 
 // ---- taiHEN's config.txt ----
@@ -316,7 +351,7 @@ static bool change_config(bool (*edit)(Lines *), int *changes, const char *uncha
 	snprintf(side, sizeof(side), "%s.tweaks-installer-old", path);
 	snprintf(fresh, sizeof(fresh), "%s.tweaks-installer-new", path);
 	bool done = file_write_checked(side, old, len) && file_write_checked(fresh, text_new, new_len) &&
-	            replace_file(path, fresh, old, len);
+	            replace_file(path, fresh, text_new, new_len, old, len);
 	if (done) {
 		int back_len = 0;
 		char *back = file_read(path, CONFIG_MAX, &back_len);
@@ -326,7 +361,7 @@ static bool change_config(bool (*edit)(Lines *), int *changes, const char *uncha
 	if (done)
 		log_add(COLOR_GOOD, "Config updated. The old one is %s", side);
 	else
-		log_add(COLOR_BAD, "Couldn't write the config: it was left as it was.");
+		log_add(COLOR_BAD, "Couldn't write the config (0x%08X): it was left as it was.", (unsigned)put_error);
 	sceIoRemove(fresh);
 	free(old);
 	free(text_new);
@@ -376,18 +411,10 @@ static bool install(void) {
 		return false;
 	}
 	sceIoMkdir("ur0:tai", 0777);
-	bool copied = file_write_checked(PLUGIN_PATH ".installer-new", plugin, len) &&
-	              replace_file(PLUGIN_PATH, PLUGIN_PATH ".installer-new", NULL, 0);
-	if (copied) {
-		int back_len = 0;
-		char *back = file_read(PLUGIN_PATH, PLUGIN_MAX, &back_len);
-		copied = back && back_len == len && memcmp(back, plugin, len) == 0;
-		free(back);
-	}
+	bool copied = put_file(PLUGIN_PATH, plugin, len);
 	free(plugin);
-	sceIoRemove(PLUGIN_PATH ".installer-new");
 	if (!copied) {
-		log_add(COLOR_BAD, "Couldn't copy tweaks.suprx to " PLUGIN_PATH ".");
+		log_add(COLOR_BAD, "Couldn't copy tweaks.suprx to " PLUGIN_PATH " (0x%08X).", (unsigned)put_error);
 		return false;
 	}
 	log_add(COLOR_GOOD, "Copied tweaks.suprx (%d bytes) to " PLUGIN_PATH ".", len);

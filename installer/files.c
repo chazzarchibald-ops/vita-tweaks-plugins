@@ -40,15 +40,26 @@ char *file_read(const char *path, int max, int *len) {
 	return buf;
 }
 
+static int write_error;
+
+int file_write_error(void) {
+	return write_error;
+}
+
 bool file_write(const char *path, const char *buf, int len) {
+	write_error = 0;
 	SceUID fd = sceIoOpen(path, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
-	if (fd < 0)
+	if (fd < 0) {
+		write_error = fd;
 		return false;
+	}
 	int done = 0;
 	while (done < len) {
 		int n = sceIoWrite(fd, buf + done, len - done);
-		if (n <= 0)
+		if (n <= 0) {
+			write_error = n;
 			break;
+		}
 		done += n;
 	}
 	sceIoClose(fd);
