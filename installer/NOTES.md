@@ -130,6 +130,20 @@ covers has never been seen happen: it was found by reading the code.
 - **Engram's 1.6 release was not touched.** Its VPK was built before
   `d793292`; one with this change has to be built from `d793292` or later.
 
+## 19 November 2026, later still: the credit line (commit `9745a75`)
+
+The main page says "Tweaks/Plugins by badmanwazzy37" under the version text,
+right-aligned, in the same size and colour (`render_ui()` in `main.c`, and the
+preview page). The My other projects window shows the version alone. This is
+this installer's own wording: nothing to carry over to the Engram side unless
+its author asks for the same there.
+
+`tweaks_installer.vpk` on the v1.1 pre-release was replaced again, with a
+build of `9745a75` (447,728 bytes; sha256 `6fd4c7de...d1ba534`), made on the
+first computer. It has both copy fixes above and the credit line, and carries
+the same `tweaks.suprx` as the release. The `v1.1` tag is still on `f9f39fd`.
+The credit line has not been seen on a console, only in the preview page.
+
 ## What the Engram side took from here
 
 Engram Installer's **My other projects** now works as this one's does:
