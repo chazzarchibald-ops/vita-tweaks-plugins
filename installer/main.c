@@ -157,10 +157,15 @@ static bool replace_file(const char *path, const char *new_path, const char *fre
 
 // Puts buf at path as a plugin goes in: written beside it and checked, put in
 // its place, and read back from there. If it can't be written beside it, it
-// is written where it goes.
+// is written where it goes. Writing a file where it is empties it first, so
+// if the plugin doesn't go in, the one that was there is put back, and where
+// there was none, no half of one is left.
 static bool put_file(const char *path, const char *buf, int len) {
 	char side[128];
 	snprintf(side, sizeof(side), "%s.installer-new", path);
+	bool was = file_exists(path);
+	int old_len = 0;
+	char *old = file_read(path, PLUGIN_MAX, &old_len);
 	bool put;
 	if (file_write_checked(side, buf, len)) {
 		put = replace_file(path, side, buf, len, NULL, 0);
@@ -175,6 +180,16 @@ static bool put_file(const char *path, const char *buf, int len) {
 		put = back && back_len == len && memcmp(back, buf, (size_t)len) == 0;
 		free(back);
 	}
+	if (!put && old) {
+		int now_len = 0;
+		char *now = file_read(path, PLUGIN_MAX, &now_len);
+		if (!now || now_len != old_len || memcmp(now, old, (size_t)old_len) != 0)
+			file_write(path, old, old_len);
+		free(now);
+	} else if (!put && !was) {
+		sceIoRemove(path);
+	}
+	free(old);
 	return put;
 }
 
