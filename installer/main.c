@@ -690,6 +690,8 @@ static void render_ui(int view, int selected, bool installed, bool ok, const cha
 		gfx_text_shadow(44, 90, 19.0f, COLOR_DIM, "Your plugins' settings in one place");
 		const char *version = VERSION_TEXT;
 		gfx_text_shadow(SCREEN_W - 40 - gfx_text_width(16.0f, version), 42, 16.0f, COLOR_DIM, version);
+		const char *credit = "Tweaks/Plugins by badmanwazzy37";
+		gfx_text_shadow(SCREEN_W - 40 - gfx_text_width(16.0f, credit), 66, 16.0f, COLOR_DIM, credit);
 		gfx_panel(LEFT_X, PANEL_Y, 404, PANEL_H, 20, COLOR_PANEL, PANEL_ALPHA);
 		gfx_panel(RIGHT_X, PANEL_Y, 472, PANEL_H, 20, COLOR_PANEL, PANEL_ALPHA);
 		gfx_panel(LEFT_X, 464, 896, 46, 14, COLOR_PANEL, PANEL_ALPHA);
