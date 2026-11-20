@@ -81,6 +81,48 @@ Renaming is still tried first: it can't leave half a file if the power goes.
   Windows line ends. If the release is rebuilt on the first computer, build
   from `f9f39fd` or later.
 
+## 19 November 2026, later: the old plugin put back (commit `24ae654`)
+
+### What was missing
+
+The fix above writes the plugin over the file where it is when the system
+refuses both the rename and the removal. Writing a file where it is empties it
+first. If that write then failed partway, `ur0:tai/tweaks.suprx` was left
+empty or cut short, and nothing put it right: `replace_file()` writes the old
+contents back when it is given them, the config gave them, and `put_file()`
+gave it none for the plugin. Before `f9f39fd` the old plugin survived that
+case, because nothing wrote over it.
+
+It would not have been silent: the screen says "Couldn't copy tweaks.suprx"
+with the code. But the plugin in `ur0:tai` stayed broken until Install was run
+again.
+
+### What was changed
+
+`put_file()` in `main.c` only:
+
+- it reads the plugin that is there before it starts;
+- if the new one doesn't go in (or doesn't read back the same), the old one is
+  written back, unless the file still holds it;
+- where there was no plugin before, what is left of the new one is removed.
+
+The same change is in Engram Installer (engram-vita commit `d793292`), where
+`put_file()` was the same function.
+
+### How far it was tested
+
+It builds with no new warnings, here and (its `main.c`) on the Engram side.
+**It has not been run on a console in either installer**, and the case it
+covers has never been seen happen: it was found by reading the code.
+
+### What was published
+
+- Source only, on both sides: `main` here and `main` in engram-vita.
+- **No release was touched.** `tweaks_installer.vpk` on the v1.1 pre-release
+  is still the build of `f9f39fd`, and the `v1.1` tag still points there.
+  Engram's 1.6 release is as it was. A VPK with this change has to be built
+  from `24ae654` or later (`d793292` or later for Engram).
+
 ## What the Engram side took from here
 
 Engram Installer's **My other projects** now works as this one's does:
