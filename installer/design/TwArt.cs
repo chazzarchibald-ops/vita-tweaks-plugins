@@ -1,6 +1,8 @@
 // Draws the Tweaks/Plugins Installer's bubble (sce_sys/icon0.png, 128 x 128) and
-// its LiveArea (the 840 x 500 background and the 280 x 158 start gate), in the
-// "Rows" design: your plugins as rows of one list, the middle one chosen.
+// its LiveArea (the 840 x 500 background and the 280 x 158 start gate). The
+// bubble is the "Rows" design: your plugins as rows of one list, the middle one
+// chosen. The LiveArea is "Gather": loose rows run into one hub, where the gate
+// sits, and come out as one tidy list.
 //
 // It does what the Engram Installer's make_icons.py, make_mockups.py and
 // make_livearea.py do between them, in C# so that it runs on a Windows PC with
@@ -98,8 +100,11 @@ public static class TwArt {
 	}
 
 	// One row of the list: a glass pill, a ball, and a line of "text". 84 x 19 at scale 1.
-	static void Row(Graphics g, float x, float y, float scale, Color[] hue, bool chosen, float alpha) {
+	// bar: how long the line of "text" is, or 0 for the usual length.
+	static void Row(Graphics g, float x, float y, float scale, Color[] hue, bool chosen, float alpha, float bar = 0) {
 		float w = 84 * scale, h = 19 * scale;
+		if (bar <= 0)
+			bar = chosen ? 48 : 38;
 		using (GraphicsPath p = Pill(x, y, w, h, h / 2)) {
 			Color fill = chosen ? Color.FromArgb((int)(77 * alpha), 110, 246, 200) : Color.FromArgb((int)(33 * alpha), 255, 255, 255);
 			Color edge = chosen ? Color.FromArgb((int)(140 * alpha), 170, 255, 226) : Color.FromArgb((int)(51 * alpha), 255, 255, 255);
@@ -109,7 +114,7 @@ public static class TwArt {
 				g.DrawPath(pen, p);
 		}
 		Orb(g, x + 11 * scale, y + 9.5f * scale, 6.2f * scale, hue, alpha);
-		using (GraphicsPath line = Pill(x + 23 * scale, y + 7 * scale, (chosen ? 48 : 38) * scale, 5 * scale, 2.5f * scale))
+		using (GraphicsPath line = Pill(x + 23 * scale, y + 7 * scale, bar * scale, 5 * scale, 2.5f * scale))
 		using (SolidBrush b = new SolidBrush(Color.FromArgb((int)((chosen ? 245 : 148) * alpha), 236, 236, 240)))
 			g.FillPath(b, line);
 	}
@@ -119,6 +124,22 @@ public static class TwArt {
 		int[] order = { 0, 1, 2 };
 		for (int i = 0; i < 3; i++)
 			Row(g, x, y + i * 24 * scale, scale, Hues[order[i]], i == 1, alpha);
+	}
+
+	// A line that leaves a level and arrives level, in one colour at a and another at b, with a soft edge.
+	static void Curve(Graphics g, PointF a, PointF b, float bend, Color from, Color to) {
+		using (GraphicsPath p = new GraphicsPath()) {
+			p.AddBezier(a, new PointF(a.X + bend, a.Y), new PointF(b.X - bend, b.Y), b);
+			foreach (float[] pass in new[] { new[] { 7f, 0.14f }, new[] { 1.8f, 0.85f } })
+				using (LinearGradientBrush brush = new LinearGradientBrush(a, b, Color.FromArgb((int)(255 * pass[1]), from),
+				                                                           Color.FromArgb((int)(255 * pass[1]), to)))
+				using (Pen pen = new Pen(brush, pass[0])) {
+					brush.WrapMode = WrapMode.TileFlipXY;
+					pen.StartCap = LineCap.Round;
+					pen.EndCap = LineCap.Round;
+					g.DrawPath(pen, p);
+				}
+		}
 	}
 
 	static float Width(Graphics g, string s, Font f) {
@@ -175,22 +196,46 @@ public static class TwArt {
 		const int W = 840, H = 500;
 		using (Bitmap big = new Bitmap(W * 2, H * 2, PixelFormat.Format32bppArgb))
 		using (Graphics g = Begin(big, 2)) {
-			Ground(g, W, H, Top, Bottom);
-			Glow(g, 420, 200, 430, Color.FromArgb(10, 200, 180), 0.20f);
-			Glow(g, 110, 70, 300, Color.FromArgb(120, 60, 240), 0.14f);
-			Glow(g, 760, 360, 300, Color.FromArgb(220, 40, 150), 0.10f);
-			// lists of rows, side by side, fading towards the edges
-			const float scale = 1.6f, stepX = 150, stepY = 40;
-			for (int col = -1; col < 7; col++)
-				for (int row = -1; row < 12; row++) {
-					float x = 420 - 84 * scale / 2 + (col - 2.5f) * stepX + stepX / 2, y = 26 + row * stepY;
-					float dx = (x + 67 - 420) / 470f, dy = (y + 15 - 205) / 300f;
-					float alpha = 1 - (float)Math.Pow(dx * dx + dy * dy, 0.8);
-					if (alpha <= 0.04f)
-						continue;
-					bool chosen = (col == 2 || col == 3) && row == 4;
-					Row(g, x, y, scale, Hues[((col + 8) * 3 + row + 8) % 4], chosen, Math.Min(1, alpha) * 0.85f);
-				}
+			Ground(g, W, H, Color.FromArgb(11, 13, 24), Color.FromArgb(24, 30, 58));
+			Glow(g, 421, 219, 330, Color.FromArgb(10, 200, 180), 0.16f);
+			Glow(g, 90, 120, 260, Color.FromArgb(120, 60, 240), 0.12f);
+			Glow(g, 770, 330, 260, Color.FromArgb(220, 40, 150), 0.08f);
+			// the hub is the middle of the gate; a row here is 150 x 34
+			PointF hub = new PointF(421, 219);
+			Color teal = Hues[1][1];
+			const float one = 150f / 84;
+			int[] hues = { 0, 2, 3, 1 };
+			float[] bars = { 39, 47, 35, 44 };
+			// loose rows on the left, each at its own angle, each with a line to the hub
+			float[][] loose = { new[] { 30f, 80, -13 }, new[] { 84f, 148, 9 }, new[] { 22f, 214, -5 }, new[] { 78f, 282, 14 } };
+			for (int i = 0; i < loose.Length; i++) {
+				float cx = loose[i][0] + 75, cy = loose[i][1] + 17;
+				double turn = loose[i][2] * Math.PI / 180;
+				Curve(g, new PointF(cx + 75 * (float)Math.Cos(turn), cy + 75 * (float)Math.Sin(turn)), hub, 90, Hues[hues[i]][1], teal);
+				GraphicsState state = g.Save();
+				g.TranslateTransform(cx, cy);
+				g.RotateTransform(loose[i][2]);
+				Row(g, -75, -17, one, Hues[hues[i]], false, 0.95f, bars[i]);
+				g.Restore(state);
+			}
+			// the same rows on the right, as one list in one panel
+			using (GraphicsPath panel = Pill(596, 96, 220, 246, 18)) {
+				using (SolidBrush b = new SolidBrush(Color.FromArgb(13, 255, 255, 255)))
+					g.FillPath(b, panel);
+				using (Pen pen = new Pen(Color.FromArgb(41, 255, 255, 255), 1.2f))
+					g.DrawPath(pen, panel);
+			}
+			using (Font label = new Font(body, 13, FontStyle.Regular, GraphicsUnit.Pixel))
+				Write(g, "Tweaks/Plugins", label, Color.FromArgb(230, 236, 236, 240), 616, 112);
+			using (SolidBrush b = new SolidBrush(Color.FromArgb(36, 255, 255, 255)))
+				g.FillRectangle(b, 612, 138, 188, 1);
+			for (int i = 0; i < 4; i++) {
+				float y = 150 + i * 46;
+				Curve(g, hub, new PointF(616, y + 20), 90, teal, Hues[hues[i]][1]);
+				Row(g, 616, y, one * 1.2f, Hues[hues[i]], i == 0, 1, bars[i]);
+			}
+			Glow(g, hub.X, hub.Y, 110, teal, 0.4f);
+			Orb(g, hub.X, hub.Y, 26, Hues[1], 1);
 			// the name stands on a darker foot
 			using (LinearGradientBrush foot = new LinearGradientBrush(new PointF(0, 318), new PointF(0, H + 1),
 			                                                          Color.FromArgb(0, 12, 14, 24), Color.FromArgb(236, 12, 14, 24)))
@@ -217,7 +262,9 @@ public static class TwArt {
 		using (Graphics g = Begin(big, 3)) {
 			Ground(g, W, H, Color.FromArgb(12, 14, 24), Color.FromArgb(30, 38, 74));
 			Glow(g, 140, 60, 150, Color.FromArgb(10, 200, 180), 0.30f);
-			Rows(g, 140 - 84 * 0.42f / 2, 12, 0.42f, 0.95f);
+			Orb(g, 118, 24, 5, Hues[0], 1);
+			Orb(g, 140, 24, 6.5f, Hues[1], 1);
+			Orb(g, 162, 24, 5, Hues[2], 1);
 			using (Font name = new Font(title, 31, FontStyle.Regular, GraphicsUnit.Pixel))
 			using (Font small = new Font(body, 10.5f, FontStyle.Regular, GraphicsUnit.Pixel)) {
 				float w = Width(g, "Tweaks/Plugins", name);

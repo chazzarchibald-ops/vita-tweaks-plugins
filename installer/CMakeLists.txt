@@ -30,8 +30,8 @@ if(NOT TWEAKS_VERSION MATCHES "^[0-9]+(\\.[0-9]+)*$")
 endif()
 
 # For trying the update on a console before a release is the latest one, and
-# never for a release: -DUPDATE_TEST_TAG=1.1 -DUPDATE_TEST_HAVE=1.0.1 makes an
-# installer that says it carries Tweaks/Plugins 1.0.1 and asks GitHub for the
+# never for a release: -DUPDATE_TEST_TAG=1.1 -DUPDATE_TEST_HAVE=1.0 makes an
+# installer that says it carries Tweaks/Plugins 1.0 and asks GitHub for the
 # 1.1 release by its tag, which finds a pre-release too. Its screen says
 # "Update test".
 set(UPDATE_TEST_TAG "" CACHE STRING "Test build: the release tag to ask GitHub for")

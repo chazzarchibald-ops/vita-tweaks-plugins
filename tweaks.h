@@ -11,7 +11,7 @@
 
 #include "regroup.h"
 
-#define TWEAKS_VERSION "1.0.1"
+#define TWEAKS_VERSION "1.1"
 
 #define DATA_DIR "ur0:data/tweaks"
 #define CONFIG_PATH DATA_DIR "/config.txt"

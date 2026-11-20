@@ -1,0 +1,457 @@
+<title>Tweaks/Plugins LiveArea Mockups</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins&family=Righteous&display=swap">
+<style>
+/* Layout: one Vita-sized screen showing the chosen design, then a grid of all six to choose from. A single dark look, like the console. */
+:root {
+	color-scheme: dark;
+	--bg: #0b0d13;
+	--surface: #151925;
+	--chosen: #1b2233;
+	--edge: #2a3146;
+	--fg: #e9eaf0;
+	--muted: #9aa1b4;
+	--accent: #7cc0ff;
+	--font: "Segoe UI", "Helvetica Neue", system-ui, -apple-system, Roboto, Arial, sans-serif;
+}
+body {
+	background: var(--bg);
+	color: var(--fg);
+	font-family: var(--font);
+	font-size: 15px;
+	line-height: 1.5;
+	padding-block: 24px;
+	padding-left: max(16px, env(safe-area-inset-left, 0px));
+	padding-right: max(16px, env(safe-area-inset-right, 0px));
+	box-sizing: border-box;
+}
+.wrap { max-width: 992px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+header, .section-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
+h2 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
+header p, .section-head p { margin: 0; color: var(--muted); }
+.section-head { margin-top: 8px; }
+.bezel { background: #05060a; border: 1px solid var(--edge); border-radius: 22px; padding: clamp(8px, 2vw, 16px); }
+canvas { display: block; width: 100%; max-width: 100%; height: auto; aspect-ratio: 960 / 544; border-radius: 8px; background: #0e1018; }
+.pad { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.pad p { margin: 0; flex: 1 1 260px; min-width: 0; }
+.pad strong { font-weight: 600; }
+.pad span { color: var(--muted); }
+button {
+	font: inherit;
+	color: var(--fg);
+	background: var(--surface);
+	border: 1px solid var(--edge);
+	border-radius: 10px;
+	padding: 8px 14px;
+	cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+button[aria-pressed="true"] { border-color: var(--accent); background: var(--chosen); }
+.designs { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.design { display: flex; flex-direction: column; gap: 10px; text-align: left; padding: 10px; border-radius: 14px; min-width: 0; }
+.design canvas { border-radius: 6px; }
+.design .name { font-weight: 600; }
+.design .tag { color: var(--accent); font-size: 12px; margin-left: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
+.design .idea { display: block; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.notes { color: var(--muted); max-width: 70ch; margin: 0; }
+.notes strong { color: var(--fg); font-weight: 600; }
+</style>
+
+<div class="wrap">
+	<header>
+		<h1>Tweaks/Plugins Installer</h1>
+		<p>LiveArea page: six designs</p>
+	</header>
+
+	<div class="bezel">
+		<canvas id="stage" width="1920" height="1088" aria-label="The chosen LiveArea design on the Vita"></canvas>
+	</div>
+	<div class="pad">
+		<p><strong id="chosen-name"></strong> <span id="chosen-idea"></span></p>
+		<button id="btn-gate" type="button" aria-pressed="true">With the Start gate</button>
+		<button id="btn-bare" type="button" aria-pressed="false">While the page opens</button>
+	</div>
+
+	<div class="section-head">
+		<h2 id="designs-title">Designs</h2>
+		<p>Choose one to see it large.</p>
+	</div>
+	<div class="designs" id="designs" role="group" aria-labelledby="designs-title"></div>
+
+	<p class="notes"><strong>The Vita's own parts are real.</strong> The status bar, the three buttons, the gate's frame, the Start button and the page curl are cut from a screenshot of your Vita, so every design sits exactly where the console puts it. The gate covers the middle of the background, so each design keeps its name clear of it.</p>
+	<p class="notes"><strong>While the page opens</strong> or closes, the background shows for a moment with nothing over it, so each design has to look finished that way too.</p>
+	<p class="notes">The Vita takes these pictures in 256 colours. Soft glows pick up a fine grain there, as the current one has; flat designs such as Blueprint and Slash lose the least.</p>
+</div>
+
+<script>
+'use strict';
+// Each design is two pictures, as the Vita takes them: the 840 x 500 background and the 280 x 158 gate.
+const BW = 840, BH = 500, GW = 280, GH = 158;
+const TITLE = '"Righteous", "Trebuchet MS", sans-serif';
+const BODY = '"Poppins", "Segoe UI", sans-serif';
+const MONO = 'Consolas, "Cascadia Mono", ui-monospace, monospace';
+const VIOLET = [[92, 24, 228], [200, 130, 255]], TEAL = [[0, 124, 160], [110, 246, 200]];
+const MAGENTA = [[200, 20, 140], [255, 138, 196]], BLUE = [[20, 60, 235], [70, 190, 255]];
+const rgba = (c, a) => `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${a})`;
+const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+
+function picture(w, h, draw) {
+	const c = document.createElement('canvas');
+	c.width = w * 2; c.height = h * 2;
+	const g = c.getContext('2d');
+	g.scale(2, 2);
+	draw(g);
+	return c;
+}
+function ground(g, w, h, top, bottom) {
+	const l = g.createLinearGradient(0, 0, 0, h);
+	l.addColorStop(0, rgba(top, 1)); l.addColorStop(1, rgba(bottom, 1));
+	g.fillStyle = l; g.fillRect(0, 0, w, h);
+}
+function glow(g, cx, cy, r, c, strength) {
+	const l = g.createRadialGradient(cx, cy, 0, cx, cy, r);
+	l.addColorStop(0, rgba(c, strength)); l.addColorStop(1, rgba(c, 0));
+	g.fillStyle = l; g.fillRect(cx - r, cy - r, 2 * r, 2 * r);
+}
+function rr(g, x, y, w, h, r) { g.beginPath(); g.roundRect(x, y, w, h, r); }
+function orb(g, cx, cy, r, hue, a = 1) {
+	const l = g.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.05, cx, cy, r);
+	l.addColorStop(0, rgba(hue[1], a)); l.addColorStop(1, rgba(hue[0], a));
+	g.fillStyle = l; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill();
+	g.save(); g.beginPath(); g.arc(cx, cy, r, 0, 7); g.clip();
+	glow(g, cx - r * 0.32, cy - r * 0.4, r * 0.55, [255, 255, 255], 0.6 * a);
+	g.restore();
+}
+// The bubble's motif: a glass row with a plugin's orb and its name as a bar.
+function row(g, x, y, s, hue, chosen, a = 1, bar = 78) {
+	const w = 150 * s, h = 34 * s;
+	rr(g, x, y, w, h, h / 2);
+	g.fillStyle = chosen ? `rgba(110,246,200,${0.3 * a})` : `rgba(255,255,255,${0.13 * a})`; g.fill();
+	g.lineWidth = 1.2 * s;
+	g.strokeStyle = chosen ? `rgba(170,255,226,${0.55 * a})` : `rgba(255,255,255,${0.2 * a})`; g.stroke();
+	orb(g, x + h / 2, y + h / 2, h * 0.3, hue, a);
+	rr(g, x + h * 1.05, y + h / 2 - 3 * s, bar * s, 6 * s, 3 * s);
+	g.fillStyle = `rgba(236,236,240,${(chosen ? 0.96 : 0.58) * a})`; g.fill();
+}
+function spaced(g, text, x, y, gap) {
+	let at = x;
+	for (const ch of text) { g.fillText(ch, at, y); at += g.measureText(ch).width + gap; }
+	return at - gap - x;
+}
+function spacedWidth(g, text, gap) {
+	let w = -gap;
+	for (const ch of text) w += g.measureText(ch).width + gap;
+	return w;
+}
+function centred(g, text, cx, y, gap) { g.textAlign = 'left'; spaced(g, text, cx - spacedWidth(g, text, gap) / 2, y, gap); }
+// The name along the bottom, where the gate and the three buttons never reach.
+function footer(g, accent, fade = [10, 12, 22]) {
+	if (fade) {
+		const l = g.createLinearGradient(0, 330, 0, 500);
+		l.addColorStop(0, rgba(fade, 0)); l.addColorStop(1, rgba(fade, 0.92));
+		g.fillStyle = l; g.fillRect(0, 330, BW, 170);
+	}
+	g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+	g.font = `46px ${TITLE}`;
+	g.fillStyle = 'rgba(0,0,0,0.6)'; g.fillText('Tweaks/Plugins', 37, 441);
+	g.fillStyle = '#ececf0'; g.fillText('Tweaks/Plugins', 36, 439);
+	const w = g.measureText('Tweaks/Plugins').width;
+	g.font = `13px ${BODY}`; g.fillStyle = rgba(accent, 1);
+	spaced(g, 'INSTALLER', 36 + w + 14, 436, 4.5);
+	g.font = `15px ${BODY}`; g.fillStyle = 'rgba(236,236,240,0.9)'; g.textAlign = 'right';
+	g.fillText("Your plugins' settings", 806, 414); g.fillText('in one place', 806, 438);
+	g.textAlign = 'left';
+}
+// A gate's writing: the name, with INSTALLER under it, above where the Start button goes.
+function gateName(g, accent) {
+	g.textBaseline = 'alphabetic'; g.textAlign = 'center';
+	g.font = `31px ${TITLE}`;
+	g.fillStyle = 'rgba(0,0,0,0.55)'; g.fillText('Tweaks/Plugins', 141, 69);
+	g.fillStyle = '#ececf0'; g.fillText('Tweaks/Plugins', 140, 68);
+	g.font = `11px ${BODY}`; g.fillStyle = rgba(accent, 1);
+	centred(g, 'INSTALLER', 140, 94, 4.5);
+}
+function curve(g, a, b, bend, from, to) {
+	const l = g.createLinearGradient(a[0], a[1], b[0], b[1]);
+	l.addColorStop(0, rgba(from, 0.85)); l.addColorStop(1, rgba(to, 0.85));
+	g.beginPath(); g.moveTo(a[0], a[1]);
+	g.bezierCurveTo(a[0] + bend, a[1], b[0] - bend, b[1], b[0], b[1]);
+	g.strokeStyle = l; g.globalAlpha = 0.16; g.lineWidth = 7; g.stroke();
+	g.globalAlpha = 1; g.lineWidth = 1.8; g.stroke();
+}
+
+// ---- Gather: loose rows on the left run into one hub and come out as one tidy list ----
+function bgGather(g) {
+	ground(g, BW, BH, [11, 13, 24], [24, 30, 58]);
+	glow(g, 421, 219, 330, [10, 200, 180], 0.16);
+	glow(g, 90, 120, 260, [120, 60, 240], 0.12);
+	glow(g, 770, 330, 260, [220, 40, 150], 0.08);
+	const hub = [421, 219], teal = TEAL[1];
+	const loose = [[30, 80, -13, VIOLET, 70], [84, 148, 9, MAGENTA, 84], [22, 214, -5, BLUE, 62], [78, 282, 14, TEAL, 78]];
+	for (const [x, y, turn, hue, bar] of loose) {
+		const cx = x + 75, cy = y + 17, t = turn * Math.PI / 180;
+		curve(g, [cx + 75 * Math.cos(t), cy + 75 * Math.sin(t)], hub, 90, hue[1], teal);
+		g.save(); g.translate(cx, cy); g.rotate(t); row(g, -75, -17, 1, hue, false, 0.95, bar); g.restore();
+	}
+	rr(g, 596, 96, 220, 246, 18);
+	g.fillStyle = 'rgba(255,255,255,0.05)'; g.fill();
+	g.lineWidth = 1.2; g.strokeStyle = 'rgba(255,255,255,0.16)'; g.stroke();
+	g.font = `13px ${BODY}`; g.fillStyle = 'rgba(236,236,240,0.9)'; g.textBaseline = 'alphabetic'; g.textAlign = 'left';
+	g.fillText('Tweaks/Plugins', 616, 126);
+	g.fillStyle = 'rgba(255,255,255,0.14)'; g.fillRect(612, 138, 188, 1);
+	const tidy = [[VIOLET, 70], [MAGENTA, 84], [BLUE, 62], [TEAL, 78]];
+	tidy.forEach(([hue, bar], i) => {
+		const y = 150 + i * 46;
+		curve(g, hub, [616, y + 20], 90, teal, hue[1]);
+		row(g, 616, y, 1.2, hue, i === 0, 1, bar);
+	});
+	glow(g, hub[0], hub[1], 110, teal, 0.4);
+	orb(g, hub[0], hub[1], 26, TEAL);
+	footer(g, [124, 192, 255]);
+}
+function gateGather(g) {
+	ground(g, GW, GH, [12, 14, 24], [30, 38, 74]);
+	glow(g, 140, 60, 150, [10, 200, 180], 0.3);
+	orb(g, 118, 24, 5, VIOLET); orb(g, 140, 24, 6.5, TEAL); orb(g, 162, 24, 5, MAGENTA);
+	gateName(g, [124, 192, 255]);
+}
+
+// ---- Slash: the page spells the name, and the gate stands where the slash is ----
+function slash(g, cx, cy, h, w) {
+	const dx = h * 0.21;
+	g.beginPath();
+	g.moveTo(cx - dx - w / 2, cy + h / 2); g.lineTo(cx - dx + w / 2, cy + h / 2);
+	g.lineTo(cx + dx + w / 2, cy - h / 2); g.lineTo(cx + dx - w / 2, cy - h / 2);
+	g.closePath();
+}
+function slashFill(g, cx, cy, h) {
+	const l = g.createLinearGradient(cx, cy + h / 2, cx, cy - h / 2);
+	l.addColorStop(0, rgba(VIOLET[0], 1)); l.addColorStop(0.55, rgba([10, 200, 180], 1)); l.addColorStop(1, rgba(TEAL[1], 1));
+	return l;
+}
+function bgSlash(g) {
+	ground(g, BW, BH, [9, 10, 18], [18, 20, 40]);
+	slash(g, 421, 219, 1000, 150);
+	const beam = g.createLinearGradient(260, 500, 580, 0);
+	beam.addColorStop(0, 'rgba(92,24,228,0.20)'); beam.addColorStop(0.5, 'rgba(10,200,180,0.16)'); beam.addColorStop(1, 'rgba(70,190,255,0.14)');
+	g.fillStyle = beam; g.fill();
+	glow(g, 421, 219, 280, [10, 200, 180], 0.16);
+	slash(g, 421, 219, 150, 36); g.fillStyle = slashFill(g, 421, 219, 150); g.fill();
+	g.textBaseline = 'middle';
+	let size = 66;
+	do { size--; g.font = `${size}px ${TITLE}`; } while (Math.max(g.measureText('Tweaks').width, g.measureText('Plugins').width) > 222);
+	g.fillStyle = '#ececf0';
+	g.textAlign = 'right'; g.fillText('Tweaks', 264, 222);
+	g.textAlign = 'left'; g.fillText('Plugins', 580, 222);
+	g.textBaseline = 'alphabetic';
+	g.font = `15px ${BODY}`; g.fillStyle = rgba(TEAL[1], 1);
+	centred(g, 'INSTALLER', 421, 376, 9);
+	g.font = `16px ${BODY}`; g.fillStyle = 'rgba(236,236,240,0.78)'; g.textAlign = 'center';
+	g.fillText("Your plugins' settings in one place", 421, 432);
+	g.textAlign = 'left';
+}
+function gateSlash(g) {
+	ground(g, GW, GH, [11, 12, 22], [22, 25, 48]);
+	glow(g, 140, 60, 130, [10, 200, 180], 0.3);
+	slash(g, 140, 60, 92, 22); g.fillStyle = slashFill(g, 140, 60, 92); g.fill();
+}
+
+// ---- Switch: one big switch, on; the gate sits on its track ----
+const TRACK_L = [10, 60, 62], TRACK_R = [16, 150, 130];
+function bgSwitch(g) {
+	ground(g, BW, BH, [7, 16, 20], [9, 34, 40]);
+	glow(g, 640, 219, 320, [60, 240, 190], 0.16);
+	const x0 = 96, x1 = 746, cy = 219, r = 86;
+	rr(g, x0, cy - r, x1 - x0, 2 * r, r);
+	const l = g.createLinearGradient(x0, 0, x1, 0);
+	l.addColorStop(0, rgba(TRACK_L, 1)); l.addColorStop(1, rgba(TRACK_R, 1));
+	g.fillStyle = l; g.fill();
+	g.lineWidth = 2; g.strokeStyle = 'rgba(170,255,226,0.4)'; g.stroke();
+	row(g, 132, 164, 0.82, VIOLET, false, 1, 70);
+	row(g, 132, 202, 0.82, TEAL, true, 1, 84);
+	row(g, 132, 240, 0.82, MAGENTA, false, 1, 62);
+	const kx = x1 - r, kr = r - 14;
+	glow(g, kx, cy, kr * 1.9, [110, 246, 200], 0.4);
+	const k = g.createRadialGradient(kx - kr * 0.3, cy - kr * 0.35, kr * 0.05, kx, cy, kr);
+	k.addColorStop(0, '#ffffff'); k.addColorStop(0.55, 'rgb(206,255,240)'); k.addColorStop(1, 'rgb(110,246,200)');
+	g.beginPath(); g.arc(kx, cy, kr, 0, 7); g.fillStyle = k; g.fill();
+	footer(g, [150, 255, 220], [5, 14, 18]);
+}
+function gateSwitch(g) {
+	const l = g.createLinearGradient(0, 0, GW, 0);
+	l.addColorStop(0, rgba(mix(TRACK_L, TRACK_R, 0.28), 1)); l.addColorStop(1, rgba(mix(TRACK_L, TRACK_R, 0.72), 1));
+	g.fillStyle = l; g.fillRect(0, 0, GW, GH);
+	glow(g, 140, 56, 150, [110, 246, 200], 0.16);
+	gateName(g, [170, 255, 226]);
+}
+
+// ---- Fan: every plugin's page as a card, held in one hand ----
+function card(g, hue, chosen) {
+	const w = 170, h = 240, dark = [18, 12, 38];
+	g.save();
+	g.shadowColor = 'rgba(0,0,0,0.5)'; g.shadowBlur = 26; g.shadowOffsetY = 8;
+	rr(g, -w / 2, 0, w, h, 18);
+	const l = g.createLinearGradient(0, 0, 0, h);
+	l.addColorStop(0, rgba(mix(hue[0], dark, chosen ? 0.3 : 0.5), 0.97)); l.addColorStop(1, rgba(mix(hue[0], dark, 0.78), 0.97));
+	g.fillStyle = l; g.fill();
+	g.restore();
+	g.lineWidth = 1.5; g.strokeStyle = rgba(hue[1], chosen ? 0.95 : 0.6); g.stroke();
+	orb(g, -w / 2 + 26, 28, 12, hue);
+	rr(g, -w / 2 + 48, 23.5, 76, 9, 4.5); g.fillStyle = 'rgba(236,236,240,0.9)'; g.fill();
+	g.fillStyle = 'rgba(255,255,255,0.16)'; g.fillRect(-w / 2 + 14, 52, w - 28, 1);
+	for (let i = 0; i < 5; i++) {
+		const y = 72 + i * 32, on = i !== 1 && i !== 4;
+		rr(g, -w / 2 + 16, y, 80 - (i % 2) * 18, 7, 3.5); g.fillStyle = 'rgba(236,236,240,0.5)'; g.fill();
+		rr(g, w / 2 - 44, y - 4, 28, 15, 7.5); g.fillStyle = on ? rgba(hue[1], 0.95) : 'rgba(255,255,255,0.2)'; g.fill();
+		g.beginPath(); g.arc(on ? w / 2 - 23.5 : w / 2 - 36.5, y + 3.5, 5.5, 0, 7); g.fillStyle = '#ffffff'; g.fill();
+	}
+}
+function bgFan(g) {
+	ground(g, BW, BH, [16, 10, 34], [34, 18, 62]);
+	glow(g, 421, 300, 380, [160, 56, 255], 0.18);
+	glow(g, 720, 120, 260, [255, 54, 150], 0.1);
+	glow(g, 120, 140, 240, [24, 120, 255], 0.1);
+	for (const [turn, hue] of [[-36, BLUE], [36, MAGENTA], [-18, VIOLET], [18, BLUE], [0, TEAL]]) {
+		g.save(); g.translate(421, 700); g.rotate(turn * Math.PI / 180); g.translate(0, -610);
+		card(g, hue, turn === 0);
+		g.restore();
+	}
+	footer(g, [255, 138, 196], [14, 8, 30]);
+}
+function gateFan(g) {
+	ground(g, GW, GH, [22, 12, 44], [46, 22, 82]);
+	glow(g, 140, 60, 150, [200, 80, 255], 0.28);
+	gateName(g, [255, 138, 196]);
+}
+
+// ---- Blueprint: what the installer does, drawn as a plan ----
+function grid(g, w, h) {
+	for (let x = 0; x <= w; x += 20) { g.fillStyle = `rgba(120,190,255,${x % 100 ? 0.05 : 0.1})`; g.fillRect(x, 0, 1, h); }
+	for (let y = 0; y <= h; y += 20) { g.fillStyle = `rgba(120,190,255,${y % 100 ? 0.05 : 0.1})`; g.fillRect(0, y, w, 1); }
+}
+function bgBlueprint(g) {
+	ground(g, BW, BH, [10, 22, 52], [8, 14, 34]);
+	grid(g, BW, BH);
+	const ink = 'rgba(170,220,255,0.95)', dim = 'rgba(150,205,255,0.55)', teal = 'rgba(140,255,222,1)';
+	g.textBaseline = 'alphabetic'; g.textAlign = 'left'; g.lineWidth = 1.2;
+	// the taiHEN config, with the installer's line first
+	g.font = `11px ${MONO}`; g.fillStyle = dim; spaced(g, 'UR0:TAI/CONFIG.TXT', 32, 104, 1.5);
+	rr(g, 30, 114, 232, 150, 8); g.strokeStyle = dim; g.stroke();
+	g.font = `13px ${MONO}`;
+	g.fillStyle = ink; g.fillText('*NPXS10015', 44, 140);
+	rr(g, 38, 150, 216, 24, 5); g.fillStyle = 'rgba(110,246,200,0.16)'; g.fill(); g.strokeStyle = teal; g.stroke();
+	g.fillStyle = teal; g.fillText('ur0:tai/tweaks.suprx', 44, 167);
+	g.fillStyle = dim;
+	['ur0:tai/henkaku.suprx', 'ur0:tai/engram.suprx', 'ur0:tai/yamt.suprx'].forEach((line, i) => g.fillText(line, 44, 194 + i * 24));
+	g.font = `11px ${MONO}`; g.fillText('first under *NPXS10015', 32, 284);
+	// the Settings menu it makes
+	spaced(g, 'SETTINGS', 584, 104, 1.5);
+	g.font = `13px ${BODY}`;
+	rr(g, 582, 114, 232, 32, 6); g.strokeStyle = dim; g.stroke();
+	g.fillStyle = dim; g.fillText('HENkaku Settings', 596, 135);
+	rr(g, 582, 152, 232, 32, 6); g.fillStyle = 'rgba(110,246,200,0.16)'; g.fill(); g.strokeStyle = teal; g.stroke();
+	g.fillStyle = teal; g.fillText('Tweaks/Plugins', 596, 173);
+	g.strokeStyle = dim; g.fillStyle = dim;
+	g.beginPath(); g.moveTo(594, 184); g.lineTo(594, 276);
+	['Engram', 'Wi-Fi Turbo', 'YAMT'].forEach((name, i) => {
+		const y = 194 + i * 34;
+		g.moveTo(594, y + 14); g.lineTo(606, y + 14);
+		g.roundRect(606, y, 208, 28, 6);
+		g.fillText(name, 618, y + 19);
+	});
+	g.stroke();
+	g.font = `11px ${MONO}`; g.fillText('straight under HENkaku Settings', 584, 312);
+	// from one to the other
+	g.setLineDash([6, 5]); g.strokeStyle = teal;
+	g.beginPath(); g.moveTo(262, 162); g.lineTo(572, 168); g.stroke();
+	g.setLineDash([]);
+	g.beginPath(); g.moveTo(582, 168); g.lineTo(572, 163); g.lineTo(572, 173); g.closePath(); g.fillStyle = teal; g.fill();
+	g.fillStyle = dim; g.fillRect(30, 384, 784, 1);
+	footer(g, [150, 210, 255], null);
+}
+function gateBlueprint(g) {
+	ground(g, GW, GH, [12, 28, 64], [9, 18, 42]);
+	grid(g, GW, GH);
+	g.setLineDash([5, 4]); g.lineWidth = 1.2; g.strokeStyle = 'rgba(150,205,255,0.5)';
+	rr(g, 12, 12, GW - 24, 96, 8); g.stroke(); g.setLineDash([]);
+	gateName(g, [140, 255, 222]);
+}
+
+// ---- the page ----
+const SOURCES = { outside: '@@OUTSIDE@@', system: '@@SYSTEM@@', rowsBg: '@@ROWSBG@@', rowsGate: '@@ROWSGATE@@' };
+const load = src => new Promise((done, fail) => { const i = new Image(); i.onload = () => done(i); i.onerror = fail; i.src = src; });
+
+function compose(canvas, design, gate, parts) {
+	const g = canvas.getContext('2d'), s = canvas.width / 960;
+	g.setTransform(s, 0, 0, s, 0, 0);
+	g.imageSmoothingQuality = 'high';
+	g.clearRect(0, 0, 960, 544);
+	g.drawImage(design.bg, 58, 43, 844, 501);
+	g.drawImage(parts.outside, 0, 0, 960, 544);
+	if (!gate) return;
+	g.save(); rr(g, 344, 187, 273, 150, 4); g.clip(); g.drawImage(design.gate, 344, 187, 273, 150); g.restore();
+	g.drawImage(parts.system, 0, 0, 960, 544);
+}
+
+async function start() {
+	try { await Promise.race([Promise.all([document.fonts.load(`46px ${TITLE}`), document.fonts.load(`15px ${BODY}`)]), new Promise(r => setTimeout(r, 4000))]); } catch (e) { /* the fallback fonts draw instead */ }
+	const [outside, system, rowsBg, rowsGate] = await Promise.all(Object.values(SOURCES).map(load));
+	const parts = { outside, system };
+	const designs = [
+		{ name: 'Rows wall', tag: 'On the Vita now', idea: 'A wall of plugin rows, two of them lit.', bg: rowsBg, gate: rowsGate },
+		{ name: 'Gather', idea: 'Loose rows run into one hub and come out as one tidy list. The gate sits on the hub.', bg: picture(BW, BH, bgGather), gate: picture(GW, GH, gateGather) },
+		{ name: 'Slash', idea: 'The page spells the name, and the gate stands where the slash is.', bg: picture(BW, BH, bgSlash), gate: picture(GW, GH, gateSlash) },
+		{ name: 'Switch', idea: 'One big switch, turned on. The gate sits on its track.', bg: picture(BW, BH, bgSwitch), gate: picture(GW, GH, gateSwitch) },
+		{ name: 'Fan', idea: "Every plugin's page as a card, held in one hand.", bg: picture(BW, BH, bgFan), gate: picture(GW, GH, gateFan) },
+		{ name: 'Blueprint', idea: 'What the installer does, drawn as a plan: its config line, and the menu.', bg: picture(BW, BH, bgBlueprint), gate: picture(GW, GH, gateBlueprint) },
+	];
+	const stage = document.getElementById('stage'), list = document.getElementById('designs');
+	const gateButton = document.getElementById('btn-gate'), bareButton = document.getElementById('btn-bare');
+	let chosen = 1, gate = true;
+	try { const saved = localStorage.getItem('livearea-design'); if (saved !== null && designs[Number(saved)]) chosen = Number(saved); } catch (e) { /* starts on the first new design */ }
+	// A link can name a design: #slash, or #slash-open for the page without its gate.
+	const named = location.hash.slice(1).match(/^([a-z]+?)(-open)?$/);
+	if (named) {
+		const index = designs.findIndex(design => design.name.toLowerCase().replace(/[^a-z]/g, '') === named[1]);
+		if (index >= 0) { chosen = index; gate = !named[2]; }
+	}
+	const buttons = designs.map((design, index) => {
+		const button = document.createElement('button');
+		button.type = 'button'; button.className = 'design';
+		const small = document.createElement('canvas');
+		small.width = 960; small.height = 544;
+		small.setAttribute('aria-hidden', 'true');
+		const label = document.createElement('span');
+		const name = document.createElement('span'); name.className = 'name'; name.textContent = design.name;
+		label.append(name);
+		if (design.tag) { const tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = design.tag; label.append(tag); }
+		const idea = document.createElement('span'); idea.className = 'idea'; idea.textContent = design.idea;
+		button.append(small, label, idea);
+		button.addEventListener('click', () => {
+			chosen = index;
+			try { localStorage.setItem('livearea-design', String(chosen)); } catch (e) { /* not remembered */ }
+			show();
+		});
+		list.append(button);
+		return { button, small };
+	});
+	function show() {
+		compose(stage, designs[chosen], gate, parts);
+		buttons.forEach(({ button, small }, index) => {
+			button.setAttribute('aria-pressed', String(index === chosen));
+			compose(small, designs[index], gate, parts);
+		});
+		document.getElementById('chosen-name').textContent = designs[chosen].name + '.';
+		document.getElementById('chosen-idea').textContent = designs[chosen].idea;
+		gateButton.setAttribute('aria-pressed', String(gate));
+		bareButton.setAttribute('aria-pressed', String(!gate));
+	}
+	gateButton.addEventListener('click', () => { gate = true; show(); });
+	bareButton.addEventListener('click', () => { gate = false; show(); });
+	window.liveareaMockups = { designs, pick(index, withGate) { chosen = index; gate = withGate; show(); } };
+	show();
+}
+start();
+</script>

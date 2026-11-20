@@ -139,7 +139,7 @@ cmake --build installer/build
 
 That makes `installer/build/tweaks_installer.vpk`. Its bubble and LiveArea images are drawn by `installer/design/make_art.ps1` (Windows PowerShell, nothing to install) and are already in `installer/sce_sys`.
 
-A release that the installer can update itself from needs two files: `tweaks.suprx` and `tweaks_installer.vpk`, under a tag that is the version number (`v1.0.1`).
+A release that the installer can update itself from needs two files: `tweaks.suprx` and `tweaks_installer.vpk`, under a tag that is the version number (`v1.1`).
 
 | File | |
 |---|---|
