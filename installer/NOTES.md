@@ -117,11 +117,18 @@ covers has never been seen happen: it was found by reading the code.
 
 ### What was published
 
-- Source only, on both sides: `main` here and `main` in engram-vita.
-- **No release was touched.** `tweaks_installer.vpk` on the v1.1 pre-release
-  is still the build of `f9f39fd`, and the `v1.1` tag still points there.
-  Engram's 1.6 release is as it was. A VPK with this change has to be built
-  from `24ae654` or later (`d793292` or later for Engram).
+- Source on both sides: `main` here and `main` in engram-vita.
+- `tweaks_installer.vpk` on the v1.1 pre-release was replaced with a build of
+  `e951f3d` (447,535 bytes; sha256 `27726040...aabde3`), made on the first
+  computer, the one 1.1 was first built on, with its VitaSDK. It carries the
+  same `tweaks.suprx` as the release, byte for byte. `tweaks.suprx` on the
+  release, the notes and the pre-release flag were left as they were.
+- **The `v1.1` tag was not moved.** It still points at `f9f39fd`, so the
+  release page shows that commit while its VPK is built from `e951f3d`, three
+  commits later (this change and two commits of notes). Moving it takes a
+  forced push of the tag, which was not done in that session.
+- **Engram's 1.6 release was not touched.** Its VPK was built before
+  `d793292`; one with this change has to be built from `d793292` or later.
 
 ## What the Engram side took from here
 
